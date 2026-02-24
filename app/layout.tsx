@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: "Zod.ai",
+  title: "OpenX",
   description: "Multi Modal AI Chatbot",
 };
 

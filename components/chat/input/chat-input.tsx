@@ -357,7 +357,7 @@ export const ChatInput = observer(({
       {showFooterDisclaimer && (
           <div className="text-center mt-2.5">
             <p className="text-xs text-neutral-500 dark:text-neutral-400 font-normal">
-                Zod.ai can make mistakes. Check important info.
+                OpenX can make mistakes. Check important info.
             </p>
           </div>
       )}

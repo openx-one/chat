@@ -147,13 +147,13 @@ export function MessageActions({
                         <div className="grid flex-1 gap-2">
                             <Input 
                                 readOnly 
-                                value={`https://zod.ai/share/${message.id.slice(0, 8)}`} 
+                                value={`https://OpenX/share/${message.id.slice(0, 8)}`} 
                                 className="bg-black/20 border-white/10 text-neutral-300 h-9 text-xs"
                             />
                         </div>
                         <Button size="sm" type="submit" className="px-3 h-9 bg-white text-black hover:bg-white/90"
                             onClick={() => {
-                                navigator.clipboard.writeText(`https://zod.ai/share/${message.id.slice(0, 8)}`);
+                                navigator.clipboard.writeText(`https://OpenX/share/${message.id.slice(0, 8)}`);
                                 toast.success("Link copied!");
                             }}
                         >
