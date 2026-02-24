@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Zap, Sparkles, Brain, Terminal, Eye, Globe } from "lucide-react";
 
 export type ProviderId = "openai" | "anthropic" | "mistral" | "gemini" | "deepseek" | "zhipu" | "huggingface" | "groq" | "meta" | "xai";
 
 export interface Model {
+  type: string;
+  cost: { input: number; output: number; };
   maxTokens: number;
   id: string;
   name: string;
@@ -13,9 +14,11 @@ export interface Model {
   usageTier: 'free' | 'paid';
   enabled: boolean;
   capabilities: {
-    thinking: any;
-    webSearch: any;
-    functionCall: any;
+    imageGeneration: boolean;
+    videoRecognition: boolean;
+    thinking?: any;
+    webSearch?: any;
+    functionCall?: any;
     vision: boolean;
     tools: boolean;
   };

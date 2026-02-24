@@ -3,17 +3,21 @@
 import * as React from "react";
 import { Sidebar } from "@/components/sidebar/sidebar";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/hooks/use-auth";
 
 export function ClientChatLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+  const { user } = useAuth();
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       {/* Sidebar */}
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        onToggle={() => setIsSidebarOpen(!isSidebarOpen)} 
-      />
+      {user && (
+        <Sidebar 
+          isOpen={isSidebarOpen} 
+          onToggle={() => setIsSidebarOpen(!isSidebarOpen)} 
+        />
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">

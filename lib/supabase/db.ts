@@ -4,6 +4,7 @@ import * as base from './db-base';
 import { MessageNode } from '@/lib/store/chat-store';
 
 export const createChat = (title?: string) => base.createChat(createClient(), title);
+export const fetchChat = (chatId: string) => base.fetchChat(createClient(), chatId);
 export const createChatBranch = (originalChatId: string, messageId: string, title?: string) => 
     base.createChatBranch(createClient(), originalChatId, messageId, title);
 export const fetchAncestorMessages = (chatId: string, limitMessageId?: string) => 

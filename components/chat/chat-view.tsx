@@ -86,9 +86,8 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
               setIsLoading(false);
           }
           
-          // Sync Title
           import("@/lib/supabase/db").then(({ fetchChat }) => {
-              fetchChat(chatId).then(chat => {
+              fetchChat(chatId).then(({ data: chat }: any) => {
                   if (chat) chatStore.setTitle(chat.title);
               });
           });
@@ -119,8 +118,13 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
     // toolActivityStore.clearAll();
 
     console.log("ChatView.handleSend Received:", attachments, contextId);
-    if (!user && !isTemp) {
-        alert("Please log in to save your chat!");
+
+    if (!user) {
+        const userMessageCount = chatStore.thread.filter(m => m.role === "user").length;
+        if (userMessageCount >= 5) {
+            toast.error("You've reached the free limit. Please log in to continue.");
+            return;
+        }
     }
 
     // 0. Prepend Context to Content if Integration Selected
@@ -137,7 +141,7 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
     let isNewChat = false;
 
     try {
-        if (!isTemp) {
+        if (!isTemp && user) {
             if (!currentChatId || currentChatId === chatId) { 
                 if (!currentChatId) {
                     const newChat = await createChat("New Chat"); 
@@ -367,24 +371,45 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
         <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-40 pointer-events-none">
              {/* ... Model Selector ... */}
              <div className="pointer-events-auto flex items-center gap-2">
-                <ModelSelector 
-                    currentModel={model as any} 
-                    onModelChange={(m) => setModel(m as any)} 
-                    isTemp={isTemp}
-                    onTempChange={setIsTemp}
-                />
-                <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
+                {user ? (
+                   <>
+                      <ModelSelector 
+                          currentModel={model as any} 
+                          onModelChange={(m) => setModel(m as any)} 
+                          isTemp={isTemp}
+                          onTempChange={setIsTemp}
+                      />
+                      <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
+                   </>
+                ) : null}
                 <button
                     onClick={() => {
                         chatStore.reset();
                         router.push('/');
                     }}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-neutral-100/50 dark:bg-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-all border border-neutral-200/50 dark:border-neutral-700/50 text-neutral-600 dark:text-neutral-300"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-neutral-100/50 dark:bg-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-all border border-neutral-200/50 dark:border-neutral-700/50 text-neutral-600 dark:text-neutral-300"
                 >
                     <SquarePen className="h-4 w-4" />
                     <span className="hidden sm:inline-block">New Chat</span>
                 </button>
             </div>
+            {/* Auth Buttons for Unauthenticated Users */}
+            {!user && (
+                <div className="pointer-events-auto flex items-center gap-2">
+                    <button
+                        onClick={() => router.push('/login')}
+                        className="px-4 py-1.5 rounded-full text-sm font-medium bg-neutral-100/50 dark:bg-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-all text-neutral-700 dark:text-neutral-200"
+                    >
+                        Log in
+                    </button>
+                    <button
+                        onClick={() => router.push('/signup')}
+                        className="px-4 py-1.5 rounded-full text-sm font-medium bg-neutral-900 text-white dark:bg-white dark:text-black hover:opacity-90 transition-all"
+                    >
+                        Sign up
+                    </button>
+                </div>
+            )}
              {/* ... Temp Toggle ... */}
              {/* ... Temp Toggle Moved to ModelSelector ... */}
         </div>

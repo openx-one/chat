@@ -89,14 +89,24 @@ const legacyModels: Model[] = [
   // --- ANTHROPIC ---
   {
     id: "claude-4.6-opus",
-    name: "Claude Opus 4.5", 
+    name: "Claude Opus 4.5",
     description: "Deepest Reasoning",
     provider: "anthropic",
     tier: "flagship",
     usageTier: "paid",
     enabled: true,
-    capabilities: { vision: true, tools: true },
-    icon: undefined, // Fix imports if needed
+    capabilities: {
+      vision: true, tools: true,
+      imageGeneration: false,
+      videoRecognition: false
+    },
+    icon: undefined,
+    maxTokens: 0,
+    type: "",
+    cost: {
+      input: 0,
+      output: 0
+    }
   },
   {
     id: "claude-3-5-sonnet",
@@ -106,19 +116,39 @@ const legacyModels: Model[] = [
     tier: "mode",
     usageTier: "paid",
     enabled: false,
-    capabilities: { vision: true, tools: true },
+    capabilities: {
+      vision: true, tools: true,
+      imageGeneration: false,
+      videoRecognition: false
+    },
     icon: undefined,
+    maxTokens: 0,
+    type: "",
+    cost: {
+      input: 0,
+      output: 0
+    }
   },
   {
-    id: "claude-3-haiku", 
+    id: "claude-3-haiku",
     name: "Claude 3 Haiku",
     description: "Fast & Light",
     provider: "anthropic",
     tier: "other",
     usageTier: "free",
     enabled: false,
-    capabilities: { vision: true, tools: true },
+    capabilities: {
+      vision: true, tools: true,
+      imageGeneration: false,
+      videoRecognition: false
+    },
     icon: undefined,
+    maxTokens: 0,
+    type: "",
+    cost: {
+      input: 0,
+      output: 0
+    }
   },
 
   // --- xAI (GROK) ---
@@ -130,8 +160,18 @@ const legacyModels: Model[] = [
     tier: "flagship",
     usageTier: "paid",
     enabled: true,
-    capabilities: { vision: true, tools: true },
+    capabilities: {
+      vision: true, tools: true,
+      imageGeneration: false,
+      videoRecognition: false
+    },
     icon: undefined,
+    maxTokens: 0,
+    type: "",
+    cost: {
+      input: 0,
+      output: 0
+    }
   },
 
   // --- ZHIPU (GLM) ---
@@ -143,8 +183,18 @@ const legacyModels: Model[] = [
     tier: "flagship",
     usageTier: "paid",
     enabled: true,
-    capabilities: { vision: true, tools: true },
+    capabilities: {
+      vision: true, tools: true,
+      imageGeneration: false,
+      videoRecognition: false
+    },
     icon: undefined,
+    maxTokens: 0,
+    type: "",
+    cost: {
+      input: 0,
+      output: 0
+    }
   },
   {
     id: "glm-4-flash",
@@ -154,8 +204,18 @@ const legacyModels: Model[] = [
     tier: "mode",
     usageTier: "free",
     enabled: false,
-    capabilities: { vision: true, tools: true },
+    capabilities: {
+      vision: true, tools: true,
+      imageGeneration: false,
+      videoRecognition: false
+    },
     icon: undefined,
+    maxTokens: 0,
+    type: "",
+    cost: {
+      input: 0,
+      output: 0
+    }
   },
 
   // // --- META (LLAMA) ---
@@ -173,15 +233,25 @@ const legacyModels: Model[] = [
   
   // --- GOOGLE (GEMINI) ---
   {
-     id: "gemini-3-pro",
-     name: "Gemini 3 Pro",
-     description: "Google Flagship",
-     provider: "gemini",
-     tier: "mode",
-     usageTier: "paid",
-     enabled: false,
-     capabilities: { vision: true, tools: true },
-     icon: undefined,
+    id: "gemini-3-pro",
+    name: "Gemini 3 Pro",
+    description: "Google Flagship",
+    provider: "gemini",
+    tier: "mode",
+    usageTier: "paid",
+    enabled: false,
+    capabilities: {
+      vision: true, tools: true,
+      imageGeneration: false,
+      videoRecognition: false
+    },
+    icon: undefined,
+    maxTokens: 0,
+    type: "",
+    cost: {
+      input: 0,
+      output: 0
+    }
   }
 ];
 

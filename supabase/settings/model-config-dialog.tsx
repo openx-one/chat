@@ -28,7 +28,8 @@ export function ModelConfigDialog({ model, open, onOpenChange, onSave }: ModelCo
         webSearch: false,
         functionCall: false,
         imageGeneration: false,
-        videoRecognition: false
+        videoRecognition: false,
+        tools: false
     });
     const [type, setType] = React.useState("chat");
     const [cost, setCost] = React.useState({ input: 0, output: 0 });
@@ -44,7 +45,8 @@ export function ModelConfigDialog({ model, open, onOpenChange, onSave }: ModelCo
                 webSearch: model.capabilities.webSearch || false,
                 functionCall: model.capabilities.functionCall || false,
                 imageGeneration: model.capabilities.imageGeneration || false,
-                videoRecognition: model.capabilities.videoRecognition || false
+                videoRecognition: model.capabilities.videoRecognition || false,
+                tools: model.capabilities.tools || false
             });
             setType(model.type || 'chat');
             setCost(model.cost || { input: 0, output: 0 });

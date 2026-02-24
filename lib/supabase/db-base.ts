@@ -22,6 +22,11 @@ export async function createChat(supabase: SupabaseClient, title: string = "New 
   return data;
 }
 
+export async function fetchChat(supabase: SupabaseClient, chatId: string) {
+    const { data } = await supabase.from('chats').select('*').eq('id', chatId).maybeSingle();
+    return data;
+}
+
 export async function createChatBranch(supabase: SupabaseClient, originalChatId: string, messageId: string, title: string = "Branch") {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("User not authenticated");
