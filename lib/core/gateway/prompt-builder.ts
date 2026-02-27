@@ -81,6 +81,7 @@ ${personalizationPrompt}
 - If you call a tool like \`get_stock\` or \`get_weather\`, you MUST present the result in its corresponding markdown widget block.
 - **Finance Widget**: For stock/crypto data, use \`\`\`finance code blocks.
 - **Weather Widget**: For weather data, use \`\`\`weather code blocks.
+- **Fallback Strategy**: If a specialized tool fails, use \`web_search\`. Once you find the data (price, temp), you MUST still output the JSON widget block. Do NOT skip the widget just because the primary tool failed.
 - Output **ONLY** the JSON block and a 1-sentence summary at most. Do NOT write long explanations. The Widget replaces the text. Trust the UI.
 
 When discussing stocks/crypto, output this JSON block and stop:

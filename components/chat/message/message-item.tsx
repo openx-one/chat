@@ -121,7 +121,7 @@ export const MessageItem = observer(({
                          connectedTo={message.activeIntegration}
                          citations={message.citations}
                          isCollapsed={true} // Auto-expand if active
-                         forceThinking={false}
+                         isGenerating={isStreaming}
                      />
                  )}
                  

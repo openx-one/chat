@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, Search, Globe, CheckCircle2, Loader2, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight, Search, Globe, HatGlasses, Loader2, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ReasoningStep } from "@/lib/store/chat-store";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,7 +14,7 @@ interface ReasoningDisplayProps {
     isCollapsed?: boolean;
     onToggle?: () => void;
     className?: string;
-    forceThinking?: boolean;
+    isGenerating?: boolean;
 }
 
 export const ReasoningDisplay = observer(function ReasoningDisplay({
@@ -24,7 +24,7 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
     isCollapsed = false,
     onToggle,
     className,
-    forceThinking = false
+    isGenerating = false
 }: ReasoningDisplayProps) {
     const [collapsed, setCollapsed] = useState(isCollapsed);
 
@@ -37,20 +37,20 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
         else setCollapsed(!collapsed);
     };
 
-    const isThinking = forceThinking || steps.some(s => s.status === 'thinking');
+    const isThinking = isGenerating || steps.some(s => s.status === 'thinking');
 
     // Grouping Logic
     const searchSteps = steps.filter(s => s.toolName === 'web_search');
     const otherSteps = steps.filter(s => s.toolName !== 'web_search');
 
     const getCurrentStateLabel = () => {
-        if (!isThinking) return "Done";
-        
         // Priority 1: Active Tool Call (specific label)
         const activeToolStep = steps.find(s => s.status === 'thinking' && s.toolName);
         if (activeToolStep) {
             return activeToolStep.thought;
         }
+
+        if (!isThinking) return "Done";
 
         // Priority 2: Analyzing search results
         if (citations && citations.length > 0) return "Analyzing sources...";
@@ -187,7 +187,7 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
                                             {step.status === 'thinking' ? (
                                                 <Loader2 className="h-4 w-4 animate-spin text-neutral-500" />
                                             ) : (
-                                                <CheckCircle2 className="h-4 w-4 text-neutral-500" />
+                                                <HatGlasses className="h-4 w-4 text-neutral-500" />
                                             )}
                                             <span className={cn(step.status === 'thinking' && "text-neutral-300")}>
                                                 {step.thought}
