@@ -109,36 +109,46 @@ export const CanvasPanel = observer(() => {
         )}>
             <Tabs defaultValue={isHtml ? "preview" : "code"} className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 backdrop-blur-sm shrink-0">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between px-3 md:px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 backdrop-blur-sm shrink-0">
+                    <div className="flex items-center gap-1.5 md:gap-2">
+                        {/* Mobile Close Button (Left) */}
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="md:hidden h-8 w-8 -ml-1 text-neutral-500" 
+                            onClick={() => canvasStore.setIsOpen(false)}
+                        >
+                            <X className="h-5 w-5" />
+                        </Button>
+
                         <div className="flex items-center gap-2 text-sm font-medium text-neutral-700 dark:text-neutral-200">
                             <div className="p-1.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400">
                                 <FileCode className="h-4 w-4" />
                             </div>
-                            <span>Canvas</span>
+                            <span className="hidden xs:inline-block">Canvas</span>
                         </div>
                         
-                        <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-700 mx-2" />
+                        <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-700 mx-1 md:mx-2" />
                         
                         <TabsList className="h-8 bg-neutral-200/50 dark:bg-neutral-800/50 p-0.5">
-                            <TabsTrigger value="code" className="h-7 text-xs px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-700">
+                            <TabsTrigger value="code" className="h-7 text-xs px-2.5 md:px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-700">
                                 <Code2 className="h-3.5 w-3.5 mr-1.5" />
-                                Code
+                                <span className="hidden sm:inline-block">Code</span>
                             </TabsTrigger>
-                            <TabsTrigger value="preview" className="h-7 text-xs px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-700">
+                            <TabsTrigger value="preview" className="h-7 text-xs px-2.5 md:px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-neutral-700">
                                 <Play className="h-3.5 w-3.5 mr-1.5" />
-                                Preview
+                                <span className="hidden sm:inline-block">Preview</span>
                             </TabsTrigger>
                         </TabsList>
                     </div>
                     
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2.5 md:gap-1">
                          {isPython && (
                             <Button 
                                 variant={isThinking ? "destructive" : "default"}
                                 size="sm" 
                                 className={cn(
-                                    "h-7 text-xs mr-2 transition-colors",
+                                    "h-7 text-xs transition-colors",
                                     isThinking ? "bg-red-500 hover:bg-red-600" : "bg-purple-600 hover:bg-purple-700 text-white"
                                 )}
                                 onClick={isThinking ? stopPython : runPython}
@@ -154,10 +164,15 @@ export const CanvasPanel = observer(() => {
                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsFullscreen(!isFullscreen)}>
                             {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
                          </Button>
-                         <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-700 mx-1" />
-                         <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-red-500/10 hover:text-red-500" onClick={() => canvasStore.setIsOpen(false)}>
-                            <X className="h-3.5 w-3.5" />
-                         </Button>
+                         
+                         {/* Mobile-only Close Button on the right? No, we have it on the left now for mobile. 
+                            If the user wants it NOT in desktop, we hide this entire group on md+ */}
+                         <div className="md:hidden flex items-center">
+                            <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-700 mx-1" />
+                            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-red-500/10 hover:text-red-500" onClick={() => canvasStore.setIsOpen(false)}>
+                                <X className="h-3.5 w-3.5" />
+                            </Button>
+                         </div>
                     </div>
                 </div>
 
