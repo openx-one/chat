@@ -12,6 +12,7 @@ import { MessageContent } from "./message-content";
 import { FileText, Globe } from "lucide-react";
 import { SearchResult } from "@/lib/tools/web-search";
 import { ReasoningDisplay } from "@/components/chat/reasoning-display";
+import FramerLoading from "@/components/chat/framer-loading";
 // import { toolActivityStore } from "@/lib/store/tool-activity-store"; // Removed
 
 interface MessageItemProps {
@@ -110,19 +111,31 @@ export const MessageItem = observer(({
         )}
 
         {/* Reasoning Display (Persisted) */}
-        {message.reasoningSteps && message.reasoningSteps.length > 0 && (
-             <div className={cn("w-full max-w-[85%] mb-2 opacity-90 hover:opacity-100 transition-opacity", isUser ? "self-end" : "self-start")}>
-                 <ReasoningDisplay 
-                     steps={message.reasoningSteps}
-                     connectedTo={message.activeIntegration}
-                     citations={message.citations}
-                     isCollapsed={!isStreaming && message.reasoningSteps.every(s => s.status === 'done')} // Auto-expand if active
-                 />
+        {((message.reasoningSteps && message.reasoningSteps.length > 0) || (isStreaming && !message.content)) && (
+             <div className={cn("w-full max-w-[85%] mb-2 opacity-90 transition-opacity", isUser ? "self-end" : "self-start")}>
+                 
+                 {/* Only show the "Thinking" dropdown IF a tool is actually being utilized */}
+                 {message.reasoningSteps && message.reasoningSteps.length > 0 && (
+                     <ReasoningDisplay 
+                         steps={message.reasoningSteps}
+                         connectedTo={message.activeIntegration}
+                         citations={message.citations}
+                         isCollapsed={true} // Auto-expand if active
+                         forceThinking={false}
+                     />
+                 )}
+                 
+                 {/* Standalone Loading Indicator - Shown before text is generated, or while tools are still thinking */}
+                 {(isStreaming && !message.content || (message.reasoningSteps || []).some(s => s.status === 'thinking')) && (
+                     <div className="mt-2 flex items-center justify-start h-8 pl-1 mb-2">
+                         <FramerLoading />
+                     </div>
+                 )}
              </div>
         )}
 
-        {/* Message Bubble (Text) - Only render if there is content or loading state */}
-        {(message.content || isStreaming || isAnalyzing) && (
+        {/* Message Bubble (Text) - Only render if there is content */}
+        {(message.content) && (
             <div className={cn(
                 "rounded-[18px] text-base transition-colors", 
                 isUser 

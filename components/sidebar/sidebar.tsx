@@ -7,7 +7,9 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { motion, AnimatePresence } from "framer-motion";
 import { deleteChat, updateChat } from "@/lib/supabase/db";
-import { Search, ChevronLeft } from "lucide-react";
+import { Search, ChevronLeft, X } from "lucide-react";
+import { observer } from "mobx-react-lite";
+import { chatStore } from "@/lib/store/chat-store";
 
 // Sub-components
 import { SidebarRail } from "./sidebar-rail";
@@ -19,7 +21,7 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
   onToggle: () => void;
 }
 
-export function Sidebar({ className, isOpen, onToggle }: SidebarProps) {
+export const Sidebar = observer(({ className, isOpen, onToggle }: SidebarProps) => {
   const router = useRouter(); 
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const [chats, setChats] = React.useState<any[]>([]);
@@ -105,7 +107,15 @@ export function Sidebar({ className, isOpen, onToggle }: SidebarProps) {
              {/* Panel Header */}
              <div className="p-5 flex items-center justify-between">
                  <h2 className="text-lg font-semibold text-white tracking-tight">Chats</h2>
-                 <Search className="h-4 w-4 text-neutral-500" />
+                 <div className="flex items-center gap-2">
+                     <Search className="h-4 w-4 text-neutral-500 hidden md:block" />
+                     <button
+                         onClick={() => chatStore.setIsMobileSidebarOpen(false)}
+                         className="md:hidden p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
+                     >
+                         <X className="h-4 w-4" />
+                     </button>
+                 </div>
              </div>
              
              <ChatHistoryList 
@@ -144,4 +154,4 @@ export function Sidebar({ className, isOpen, onToggle }: SidebarProps) {
 
     </motion.div>
   );
-}
+});

@@ -1,15 +1,16 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Mistral } from '@mistralai/mistralai';
 import { ModelConnection } from "../../types";
 
 export class MistralAdapter implements ModelConnection {
-    private client: Mistral;
+    private apiKey: string;
+    private baseURL = "https://api.mistral.ai/v1";
 
     constructor(
         public id: string,
         apiKey: string
     ) {
-        this.client = new Mistral({ apiKey: apiKey });
+        this.apiKey = apiKey;
     }
 
     async createStream(messages: any[], tools?: any[]): Promise<any> {
@@ -73,54 +74,96 @@ export class MistralAdapter implements ModelConnection {
 
          if (tools && tools.length > 0) {
              params.tools = tools;
-             params.toolChoice = "auto"; 
+             params.tool_choice = "auto"; 
          }
 
          try {
-             return await this.client.chat.stream(params);
+             const response = await fetch(`${this.baseURL}/chat/completions`, {
+                 method: 'POST',
+                 headers: {
+                     'Content-Type': 'application/json',
+                     'Authorization': `Bearer ${this.apiKey}`,
+                     'Accept': 'text/event-stream'
+                 },
+                 body: JSON.stringify(params)
+             });
+
+             if (!response.ok) {
+                 const err = await response.text();
+                 throw new Error(`API Error ${response.status}: ${err}`);
+             }
+
+             return response.body;
          } catch (e: any) {
-             console.error(`[MistralAdapter] SDK Error!`, e);
-             if (e.body) console.error(`[MistralAdapter] Error Body:`, e.body);
-             throw new Error(`Mistral SDK Error: ${e.message}`);
+             console.error(`[MistralAdapter] Fetch Error!`, e);
+             throw new Error(`Mistral API Error: ${e.message}`);
          }
     }
 
     async *processStream(stream: any): AsyncGenerator<any> {
-        for await (const chunk of stream) {
-            // console.log(`[MistralAdapter] Raw Chunk:`, JSON.stringify(chunk));
-            
-            const choice = chunk.data?.choices?.[0];
-            if (!choice) continue;
-            
-            const delta = choice.delta;
-            if (!delta) continue;
+        if (!stream) return;
+        
+        const reader = stream.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-            if (delta.content !== undefined && delta.content !== null) {
-                if (typeof delta.content === 'string') {
-                    yield { type: "text", content: delta.content };
-                } else if (Array.isArray(delta.content)) {
-                     const text = delta.content.map((c: any) => c.type === 'text' ? c.text : '').join('');
-                     if (text) yield { type: "text", content: text };
-                }
-            }
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
 
-            // Detect tool calls (handle both camelCase and snake_case just in case)
-            const toolCalls = delta.toolCalls || delta.tool_calls;
-            if (toolCalls && Array.isArray(toolCalls) && toolCalls.length > 0) {
-                const tc = toolCalls[0];
-                yield {
-                    type: "tool_call_chunk",
-                    tool_call: {
-                        id: tc.id,
-                        index: tc.index,
-                        type: tc.type || "function",
-                        function: {
-                            name: tc.function?.name,
-                            arguments: tc.function?.arguments
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (line.trim() === '') continue;
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data.trim() === '[DONE]') continue;
+                        
+                        try {
+                            const chunk = JSON.parse(data);
+                            const choice = chunk.choices?.[0];
+                            if (!choice) continue;
+                            
+                            const delta = choice.delta;
+                            if (!delta) continue;
+
+                            if (delta.content !== undefined && delta.content !== null) {
+                                if (typeof delta.content === 'string') {
+                                    yield { type: "text", content: delta.content };
+                                } else if (Array.isArray(delta.content)) {
+                                    const text = delta.content.map((c: any) => c.type === 'text' ? c.text : '').join('');
+                                    if (text) yield { type: "text", content: text };
+                                }
+                            }
+
+                            // Detect tool calls
+                            const toolCalls = delta.tool_calls || delta.toolCalls;
+                            if (toolCalls && Array.isArray(toolCalls) && toolCalls.length > 0) {
+                                const tc = toolCalls[0];
+                                yield {
+                                    type: "tool_call_chunk",
+                                    tool_call: {
+                                        id: tc.id,
+                                        index: tc.index,
+                                        type: tc.type || "function",
+                                        function: {
+                                            name: tc.function?.name,
+                                            arguments: tc.function?.arguments
+                                        }
+                                    }
+                                };
+                            }
+                        } catch (e) {
+                            // ignore unparseable chunks
                         }
                     }
-                };
+                }
             }
+        } finally {
+            reader.releaseLock();
         }
     }
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { modelRouter } from "@/lib/api/router";
+import { modelRouter } from "@/lib/ai/router";
 import { MessageNode } from "@/lib/store/chat-store";
 
 export async function POST(req: NextRequest) {

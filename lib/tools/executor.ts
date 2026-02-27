@@ -2,7 +2,7 @@
 /* eslint-disable prefer-const */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { toolRegistry } from "./registry";
-import { StreamChunk } from "@/lib/api/router";
+import { StreamChunk } from "@/lib/ai/router";
 import { IntentNormalizer } from "@/lib/core/intent/normalizer";
 import { Planner } from "@/lib/core/runtime/planner";
 import { Policy } from "@/lib/core/runtime/policy";

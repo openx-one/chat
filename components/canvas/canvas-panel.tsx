@@ -86,7 +86,7 @@ export const CanvasPanel = observer(() => {
     return (
         <div className={cn(
             "flex flex-col h-full border-l border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] transition-all duration-300 ease-in-out shadow-xl",
-            isFullscreen ? "fixed inset-0 z-50 w-full" : "w-[45%] min-w-[400px]"
+            isFullscreen ? "fixed inset-0 z-50 w-full" : "fixed inset-0 z-50 md:relative md:w-[45%] md:min-w-[400px] w-full"
         )}>
             <Tabs defaultValue={isHtml ? "preview" : "code"} className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Github, Loader2, Facebook, Apple } from "lucide-react"
+import { Loader2, ArrowLeft } from "lucide-react"
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
@@ -33,8 +33,12 @@ export function UserAuthForm({ className, view, ...props }: UserAuthFormProps) {
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
   const [error, setError] = React.useState<string | null>(null)
   const [success, setSuccess] = React.useState<string | null>(null)
+  const [showOtpInput, setShowOtpInput] = React.useState<boolean>(false)
+  const [email, setEmail] = React.useState<string>("")
 
-  async function onSubmit(event: React.SyntheticEvent) {
+  const supabase = createClient()
+
+  async function handleSendOtp(event: React.SyntheticEvent) {
     event.preventDefault()
     setIsLoading(true)
     setError(null)
@@ -43,20 +47,20 @@ export function UserAuthForm({ className, view, ...props }: UserAuthFormProps) {
     const target = event.target as typeof event.target & {
       email: { value: string }
     }
-
-    const email = target.email.value
-    const supabase = createClient()
+    const emailValue = target.email.value
 
     try {
         const { error } = await supabase.auth.signInWithOtp({
-            email,
+            email: emailValue,
             options: {
-                // Determine whether you want to redirect to a specific URL after confirming magic link
                 emailRedirectTo: `${window.location.origin}/`,
+                shouldCreateUser: view === "signup"
             },
         })
         if (error) throw error
-        setSuccess("Check your email for the magic link to continue.")
+        setEmail(emailValue)
+        setShowOtpInput(true)
+        setSuccess("Check your email for the 6-digit code.")
     } catch (err: any) {
         setError(err.message || "Something went wrong")
     } finally {
@@ -64,14 +68,36 @@ export function UserAuthForm({ className, view, ...props }: UserAuthFormProps) {
     }
   }
 
-  const handleSocialLogin = async (provider: 'github' | 'google' | 'facebook' | 'apple') => {
-      // Stub for Apple since we just want the icon for now
-      if (provider === 'apple') return;
-      
+  async function handleVerifyOtp(event: React.SyntheticEvent) {
+    event.preventDefault()
+    setIsLoading(true)
+    setError(null)
+
+    const target = event.target as typeof event.target & {
+      code: { value: string }
+    }
+    const token = target.code.value
+
+    try {
+        const { error } = await supabase.auth.verifyOtp({
+            email,
+            token,
+            type: 'email'
+        })
+        if (error) throw error
+        // Success: Supabase redirects or stays logged in depending on setup
+        window.location.href = "/"
+    } catch (err: any) {
+        setError(err.message || "Invalid or expired code")
+    } finally {
+        setIsLoading(false)
+    }
+  }
+
+  const handleGoogleLogin = async () => {
       setIsLoading(true);
-      const supabase = createClient();
       await supabase.auth.signInWithOAuth({
-          provider,
+          provider: 'google',
           options: {
               redirectTo: `${window.location.origin}/auth/callback`,
           }
@@ -79,94 +105,129 @@ export function UserAuthForm({ className, view, ...props }: UserAuthFormProps) {
   }
 
   return (
-    <div className={cn("grid gap-8 w-full", className)} {...props}>
+    <div className={cn("grid gap-6 w-full", className)} {...props}>
         
-      {/* SSO Grid */}
-      <div className="grid grid-cols-2 gap-4">
-        <Button 
-            variant="outline" 
-            type="button" 
-            disabled={isLoading} 
-            onClick={() => handleSocialLogin('google')} 
-            className="bg-[#121212] border-white/10 hover:bg-[#1a1a1a] text-white/90 h-11"
-        >
-          <GoogleIcon className="mr-2 h-4 w-4" /> Google
-        </Button>
-        <Button 
-            variant="outline" 
-            type="button" 
-            disabled={isLoading} 
-            onClick={() => handleSocialLogin('github')} 
-            className="bg-[#121212] border-white/10 hover:bg-[#1a1a1a] text-white/90 h-11"
-        >
-          <Github className="mr-2 h-4 w-4" /> Github
-        </Button>
-        <Button 
-            variant="outline" 
-            type="button" 
-            disabled={isLoading} 
-            onClick={() => handleSocialLogin('facebook')} 
-            className="bg-[#121212] border-white/10 hover:bg-[#1a1a1a] text-white/90 h-11"
-        >
-          <Facebook className="mr-2 h-4 w-4 text-blue-500 fill-blue-500" /> Facebook
-        </Button>
-        <Button 
-            variant="outline" 
-            type="button" 
-            disabled={true} 
-            className="bg-[#121212] border-white/10 hover:bg-[#1a1a1a] text-white/90 h-11 opacity-60"
-            title="Coming Soon"
-        >
-          <Apple className="mr-2 h-4 w-4 fill-white" /> Apple
-        </Button>
-      </div>
+      {!showOtpInput && (
+        <>
+            <Button 
+                variant="outline" 
+                type="button" 
+                disabled={isLoading} 
+                onClick={handleGoogleLogin} 
+                className="bg-[#121212] border-white/10 hover:bg-[#1a1a1a] text-white/90 h-11 w-full"
+            >
+                <GoogleIcon className="mr-2 h-4 w-4" /> Continue with Google
+            </Button>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-white/10" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-black px-4 text-neutral-500">
-            Or
-          </span>
-        </div>
-      </div>
+            <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-white/10" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-black px-4 text-neutral-500">
+                        Or
+                    </span>
+                </div>
+            </div>
 
-      <form onSubmit={onSubmit}>
-        <div className="grid gap-6">
-          <div className="grid gap-2">
-            <Label className="text-sm text-neutral-300 font-medium" htmlFor="email">
-              Email
-            </Label>
-            <Input
-              id="email"
-              placeholder="eg. johnfrans@gmail.com"
-              type="email"
-              autoCapitalize="none"
-              autoComplete="email"
-              autoCorrect="off"
-              disabled={isLoading}
-              required
-              className="bg-[#121212] border-transparent focus-visible:ring-1 focus-visible:ring-white/20 text-white placeholder:text-neutral-600 h-11 rounded-lg"
-            />
-          </div>
-          
-          <div className="space-y-2">
-              {error && (
-                  <p className="text-sm text-red-500 font-medium text-center">{error}</p>
-              )}
-              {success && (
-                  <p className="text-sm text-green-500 font-medium text-center">{success}</p>
-              )}
-              <Button disabled={isLoading || !!success} className="w-full bg-white text-black hover:bg-neutral-200 h-11 font-semibold rounded-lg text-[15px]">
-                {isLoading && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <form onSubmit={handleSendOtp}>
+                <div className="grid gap-4">
+                    <div className="grid gap-2">
+                        <Label className="text-sm text-neutral-300 font-medium" htmlFor="email">
+                            Email
+                        </Label>
+                        <Input
+                            id="email"
+                            name="email"
+                            placeholder="eg. johnfrans@gmail.com"
+                            type="email"
+                            autoCapitalize="none"
+                            autoComplete="email"
+                            autoCorrect="off"
+                            disabled={isLoading}
+                            required
+                            className="bg-[#121212] border-transparent focus-visible:ring-1 focus-visible:ring-white/20 text-white placeholder:text-neutral-600 h-11 rounded-lg"
+                        />
+                    </div>
+                    
+                    {error && (
+                        <p className="text-xs text-red-500 font-medium text-center">{error}</p>
+                    )}
+                    
+                    <Button disabled={isLoading} className="w-full bg-white text-black hover:bg-neutral-200 h-11 font-semibold rounded-lg text-[15px]">
+                        {isLoading && (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        {view === "signup" ? "Sign Up" : "Continue"}
+                    </Button>
+                </div>
+            </form>
+        </>
+      )}
+
+      {showOtpInput && (
+        <form onSubmit={handleVerifyOtp}>
+            <div className="grid gap-6">
+                <div className="flex items-center">
+                    <button 
+                        type="button" 
+                        onClick={() => setShowOtpInput(false)}
+                        className="text-neutral-500 hover:text-white transition-colors"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                    </button>
+                    <div className="ml-4">
+                        <h2 className="text-sm font-medium text-white">Enter code</h2>
+                        <p className="text-xs text-neutral-500">Sent to {email}</p>
+                    </div>
+                </div>
+
+                <div className="grid gap-2">
+                    <Label className="text-sm text-neutral-300 font-medium" htmlFor="code">
+                        6-digit code
+                    </Label>
+                    <Input
+                        id="code"
+                        name="code"
+                        placeholder="000000"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        autoComplete="one-time-code"
+                        disabled={isLoading}
+                        required
+                        autoFocus
+                        className="bg-[#121212] border-transparent focus-visible:ring-1 focus-visible:ring-white/20 text-white placeholder:text-neutral-600 h-11 rounded-lg text-center tracking-[1em] font-mono text-lg"
+                    />
+                </div>
+                
+                {error && (
+                    <p className="text-xs text-red-500 font-medium text-center">{error}</p>
                 )}
-                {view === "signup" ? "Sign Up" : "Continue"}
-              </Button>
-          </div>
-        </div>
-      </form>
+                {success && (
+                    <p className="text-xs text-green-500 font-medium text-center">{success}</p>
+                )}
+
+                <Button disabled={isLoading} className="w-full bg-white text-black hover:bg-neutral-200 h-11 font-semibold rounded-lg text-[15px]">
+                    {isLoading && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Verify & Login
+                </Button>
+
+                <p className="text-center text-xs text-neutral-500">
+                    Didn&apos;t receive it?{" "}
+                    <button 
+                        type="button" 
+                        onClick={() => handleSendOtp({ preventDefault: () => {}, target: { email: { value: email } } } as any)}
+                        className="text-white hover:underline underline-offset-4"
+                    >
+                        Resend code
+                    </button>
+                </p>
+            </div>
+        </form>
+      )}
     </div>
   )
 }

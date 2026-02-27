@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, Sparkles, Search, Globe, CheckCircle2, Loader2, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight, Search, Globe, CheckCircle2, Loader2, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ReasoningStep } from "@/lib/store/chat-store";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,6 +14,7 @@ interface ReasoningDisplayProps {
     isCollapsed?: boolean;
     onToggle?: () => void;
     className?: string;
+    forceThinking?: boolean;
 }
 
 export const ReasoningDisplay = observer(function ReasoningDisplay({
@@ -22,7 +23,8 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
     citations,
     isCollapsed = false,
     onToggle,
-    className
+    className,
+    forceThinking = false
 }: ReasoningDisplayProps) {
     const [collapsed, setCollapsed] = useState(isCollapsed);
 
@@ -35,11 +37,24 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
         else setCollapsed(!collapsed);
     };
 
-    const isThinking = steps.some(s => s.status === 'thinking');
+    const isThinking = forceThinking || steps.some(s => s.status === 'thinking');
 
     // Grouping Logic
     const searchSteps = steps.filter(s => s.toolName === 'web_search');
     const otherSteps = steps.filter(s => s.toolName !== 'web_search');
+
+    const getCurrentStateLabel = () => {
+        if (!isThinking) return "Done";
+        
+        if (searchSteps.some(s => s.status === 'thinking')) return "Searching Internet...";
+        
+        // If we have citations but the model is still generating (forceThinking or other steps)
+        if (citations && citations.length > 0) return "Analyzing sources...";
+        
+        return "Thinking...";
+    };
+
+    const currentStateLabel = getCurrentStateLabel();
 
     const getHostname = (url: string) => {
         try {
@@ -55,23 +70,29 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
              <div className="flex flex-wrap items-center gap-3">
                 <button
                     onClick={handleToggle}
-                    className="flex items-center gap-2 text-sm font-medium transition-colors py-1 group"
+                    className="flex items-center gap-2 text-base transition-colors py-1 group"
                 >
                     <div className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all",
-                        isThinking 
-                            ? "bg-neutral-900/50 group-hover:bg-neutral-900 group-hover:border-neutral-700"
-                            : "bg-green-500/10 border-green-500/20 group-hover:bg-green-500/20"
+                        "flex items-center gap-2 transition-all"
                     )}>
                         
-                        <span className={cn(
-                            "font-semibold tracking-wide",
-                            isThinking 
-                                ? "bg-gradient-to-r from-orange-300 via-amber-200 to-orange-400 bg-clip-text text-transparent animate-pulse"
-                                : "text-green-600 dark:text-green-400"
-                        )}>
-                            {isThinking ? "Thinking" : "Research Complete"}
-                        </span>
+                        {isThinking ? (
+                            <motion.span 
+                                className="font-semibold tracking-wide text-transparent bg-clip-text"
+                                style={{
+                                    backgroundImage: "linear-gradient(135deg, #51565A 30%, #FFFFFF 50%, #51565A 70%)",
+                                    backgroundSize: "200% 100%",
+                                }}
+                                animate={{ backgroundPosition: ["200% 0", "-200% 0"] }}
+                                transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+                            >
+                                {currentStateLabel}
+                            </motion.span>
+                        ) : (
+                            <span className="tracking-wide text-neutral-500 dark:text-neutral-400">
+                                {currentStateLabel}
+                            </span>
+                        )}
                         <span className="text-neutral-500 ml-1">
                             {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                         </span>
@@ -102,17 +123,16 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
                             {searchSteps.length > 0 && (
                                 <div className="flex flex-col gap-2">
                                     <div className="flex items-center gap-2 text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-blue-500/50" />
                                         Searching..
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {searchSteps.map((step) => {
                                             const query = step.toolArgs?.q || step.toolArgs?.query || step.toolArgs?.query_term || "web";
                                             return (
-                                                <div key={step.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-sm text-neutral-300">
-                                                    <Search className="h-3.5 w-3.5 text-neutral-500" />
+                                                <div key={step.id} className="flex items-center gap-2 py-1 text-base text-neutral-300">
+                                                    <Search className="h-4 w-4 text-neutral-500" />
                                                     <span>{query}</span>
-                                                    {step.status === 'thinking' && <Loader2 className="h-3 w-3 animate-spin text-neutral-600" />}
+                                                    {step.status === 'thinking' && <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-500" />}
                                                 </div>
                                             );
                                         })}
@@ -124,7 +144,6 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
                             {citations && citations.length > 0 && (
                                 <div className="flex flex-col gap-2 mt-2">
                                     <div className="flex items-center gap-2 text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-green-500/50" />
                                         Analyzing Sources...
                                     </div>
                                     <div className="flex flex-col gap-1">
@@ -134,15 +153,15 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
                                                 href={cite.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="flex items-center justify-between px-3 py-2 rounded-lg bg-neutral-900/30 border border-neutral-800/50 hover:bg-neutral-900 hover:border-neutral-700 transition-colors group/cite cursor-pointer text-decoration-none"
+                                                className="flex items-center justify-between py-1.5 hover:opacity-80 transition-colors group/cite cursor-pointer text-decoration-none"
                                             >
                                                 <div className="flex items-center gap-3 overflow-hidden min-w-0">
                                                     {cite.icon ? (
                                                         <img src={cite.icon} alt="" className="h-4 w-4 rounded-sm shrink-0" />
                                                     ) : (
-                                                        <Globe className="h-4 w-4 text-neutral-600 shrink-0" />
+                                                        <Globe className="h-4 w-4 text-neutral-500 shrink-0" />
                                                     )}
-                                                    <span className="text-sm font-medium text-neutral-300 truncate">{cite.title}</span>
+                                                    <span className="text-base text-neutral-300 truncate">{cite.title}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 pl-2 shrink-0">
                                                     <span className="text-xs text-neutral-500">
@@ -160,11 +179,11 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
                             {otherSteps.length > 0 && (
                                 <div className="flex flex-col gap-2 mt-1">
                                     {otherSteps.map((step) => (
-                                        <div key={step.id} className="flex items-center gap-3 text-sm text-neutral-400">
+                                        <div key={step.id} className="flex items-center gap-3 text-base text-neutral-400 py-1">
                                             {step.status === 'thinking' ? (
-                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-500" />
+                                                <Loader2 className="h-4 w-4 animate-spin text-neutral-500" />
                                             ) : (
-                                                <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                                                <CheckCircle2 className="h-4 w-4 text-neutral-500" />
                                             )}
                                             <span className={cn(step.status === 'thinking' && "text-neutral-300")}>
                                                 {step.thought}
@@ -175,7 +194,7 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
                             )}
 
                             {/* Fallback if nothing to show but collapsed was opened toggled manually */}
-                            {searchSteps.length === 0 && (!citations || citations.length === 0) && otherSteps.length === 0 && (
+                            {searchSteps.length === 0 && (!citations || citations.length === 0) && otherSteps.length === 0 && !isThinking && (
                                 <div className="text-xs text-neutral-600 italic pl-1">
                                     Ready to think...
                                 </div>

@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Anthropic from "@anthropic-ai/sdk";
-import { ModelConnection } from "../connections";
+import { ModelConnection } from "../../types";
 
-export class AnthropicConnection implements ModelConnection {
+export class AnthropicAdapter implements ModelConnection {
     private client: Anthropic;
 
     constructor(
         public id: string,
-        apiKey: string
+        config: { apiKey: string }
     ) {
         this.client = new Anthropic({
-            apiKey: apiKey,
+            apiKey: config.apiKey,
             dangerouslyAllowBrowser: true // Assuming client-side for now
         });
     }
@@ -40,11 +40,11 @@ export class AnthropicConnection implements ModelConnection {
              // params.tool_choice = { type: "auto" }; // Default
          }
 
-         console.log(`[AnthropicConnection:${this.id}] Initializing stream via Native SDK...`);
+         console.log(`[AnthropicAdapter:${this.id}] Initializing stream via Native SDK...`);
          try {
              return await this.client.messages.create(params);
          } catch (e: any) {
-             console.error(`[AnthropicConnection] SDK Error:`, e);
+             console.error(`[AnthropicAdapter] SDK Error:`, e);
              throw new Error(`Anthropic SDK Error: ${e.message}`);
          }
     }

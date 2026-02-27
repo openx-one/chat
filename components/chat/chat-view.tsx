@@ -5,7 +5,7 @@
 
 import * as React from "react";
 import { observer } from "mobx-react-lite";
-// import { modelRouter } from "@/lib/api/router"; // Removed: Server side only
+// import { modelRouter } from "@/lib/ai/router"; // Removed: Server side only
 import { chatStore } from "@/lib/store/chat-store";
 import { canvasStore } from "@/lib/store/canvas-store";
 import { createChat, createChatBranch, saveMessage, fetchMessages, updateChatTitle } from "@/lib/supabase/db";
@@ -17,7 +17,7 @@ import { SettingsDialog } from "@/components/profile/settings-dialog";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Sparkles, Plus, MessageCircleDashed, SquarePen } from "lucide-react";
+import { Sparkles, Plus, MessageCircleDashed, SquarePen, Menu } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { CitationSidebar } from "@/components/chat/citation-sidebar";
@@ -312,6 +312,9 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
                                     name: chunk.name,
                                     content: chunk.content
                                 });
+                                
+                                chatStore.updateReasoningStepStatus(assistantMsgId, chunk.tool_call_id, "done");
+
                                 const searchResults = JSON.parse(chunk.content);
                                 if (Array.isArray(searchResults)) {
                                     chatStore.updateMessageCitations(assistantMsgId, searchResults);
@@ -321,6 +324,18 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
                             }
                         } else if (chunk.type === "tool_call") {
                             chatStore.updateMessageToolCalls(assistantMsgId, [chunk.tool_call]);
+                            
+                            let args = {};
+                            try { args = JSON.parse(chunk.tool_call.function.arguments || "{}"); } catch(e) {}
+                            
+                            chatStore.addReasoningStep(assistantMsgId, {
+                                id: chunk.tool_call.id,
+                                thought: `Using tool ${chunk.tool_call.function.name}...`,
+                                status: "thinking",
+                                timestamp: Date.now(),
+                                toolName: chunk.tool_call.function.name,
+                                toolArgs: args
+                            });
                         } else if (chunk.type === "tool_call_chunk") {
                             // Can ignore chunks if we handle final tool_call, or update incrementally
                             // Gateway currently sends chunks then maybe a final? 
@@ -371,6 +386,15 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
         <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-40 pointer-events-none">
              {/* ... Model Selector ... */}
              <div className="pointer-events-auto flex items-center gap-2">
+                {user && (
+                    <button
+                        onClick={() => chatStore.setIsMobileSidebarOpen(!chatStore.isMobileSidebarOpen)}
+                        className="md:hidden flex items-center justify-center p-2 rounded-xl bg-[#121212]/80 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 transition-colors shadow-lg"
+                        aria-label="Toggle Sidebar"
+                    >
+                        <Menu className="h-5 w-5" />
+                    </button>
+                )}
                 {user ? (
                    <>
                       <ModelSelector 
@@ -455,7 +479,7 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
 
         {/* Right Sidebar - Citations */}
         {chatStore.activeCitations && (
-             <div className="w-[400px] shrink-0 h-full border-l border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] transition-all duration-300 ease-in-out">
+             <div className="fixed inset-0 z-50 md:relative md:w-[400px] w-full shrink-0 h-full border-l border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0c0c] transition-all duration-300 ease-in-out">
                   <CitationSidebar className="h-full" />
              </div>
         )}

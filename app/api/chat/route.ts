@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { modelRouter } from "@/lib/api/router";
+import { modelRouter } from "@/lib/ai/router";
 // import { MessageNode } from "@/lib/store/chat-store";
 // import { auth } from "@/lib/supabase/server";
 

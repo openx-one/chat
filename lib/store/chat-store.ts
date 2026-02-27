@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { makeAutoObservable, observable } from "mobx";
 import { v4 as uuidv4 } from "uuid";
-import { PERSONALITIES, DEFAULT_PERSONALITY, Personality } from "@/lib/api/personalities";
+import { PERSONALITIES, DEFAULT_PERSONALITY, Personality } from "@/lib/ai/personalities";
 
 export type Role = "user" | "assistant" | "system" | "tool";
 
@@ -56,10 +56,15 @@ class ChatStore {
   title: string | null = null; // Observable Title
   personality: Personality = DEFAULT_PERSONALITY; // AI Personality
   isGenerating: boolean = false;
+  isMobileSidebarOpen: boolean = false;
 
   constructor() {
     makeAutoObservable(this);
     this.hydrateSettings();
+  }
+
+  setIsMobileSidebarOpen(open: boolean) {
+      this.isMobileSidebarOpen = open;
   }
 
   setTitle(title: string) {

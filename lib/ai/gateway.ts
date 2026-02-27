@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { MessageNode } from "@/lib/store/chat-store";
-import { ModelAdapter } from "../router";
-import { ModelConnection } from "./connections";
+import { ModelAdapter } from "./router";
+import { ModelConnection } from "./types";
 import { constructSystemPrompt } from "@/lib/core/gateway/prompt-builder";
 import { ToolExecutor } from "@/lib/tools/executor";
 import { toolRegistry } from "@/lib/tools";
@@ -53,7 +53,7 @@ export class Gateway implements ModelAdapter {
     );
   }
 
-  async *streamChat(messages: MessageNode[], userId?: string): AsyncGenerator<import("../router").StreamChunk, void, unknown> {
+  async *streamChat(messages: MessageNode[], userId?: string): AsyncGenerator<import("./router").StreamChunk, void, unknown> {
     try {
       console.log(`[Gateway:${this.id}] Starting request flow...`);
 

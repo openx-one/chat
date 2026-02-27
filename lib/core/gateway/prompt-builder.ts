@@ -1,4 +1,4 @@
-import { Personality } from "@/lib/api/personalities";
+import { Personality } from "@/lib/ai/personalities";
 import { chatStore } from "@/lib/store/chat-store";
 
 /**

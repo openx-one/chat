@@ -1,12 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { MessageNode } from "@/lib/store/chat-store";
-import { Gateway } from "./gateway/core";
-import { OpenAIConnection } from "./gateway/connections";
-import { models, providers, Model } from "@/lib/config/models";
-import { MistralProvider } from "./providers/mistral";
-import { AnthropicConnection } from "./gateway/connections/anthropic";
-import { HuggingFaceConnection } from "./gateway/connections/huggingface";
-import { openai, mistral } from "@/lib/ai/providers"; 
+import { Gateway } from "./gateway";
+import { models, Model } from "@/lib/config/models";
+import * as aiProviders from "@/lib/ai/providers"; 
 import { RateLimiter } from "./rate-limiter";
 
 export interface ModelResponse {
@@ -60,55 +56,19 @@ class UnifiedRouter {
   }
 
   private createAdapterFor(model: Model): ModelAdapter | null {
-      const providerConfig = providers[model.provider];
-      if (!providerConfig) return null;
+      const providerModule = (aiProviders as Record<string, any>)[model.provider];
 
-      const apiKey = process.env[providerConfig.apiConfig.apiKeyEnv] || process.env[`NEXT_PUBLIC_${providerConfig.apiConfig.apiKeyEnv}`] || "";
-      let connection: any = null;
-
-      // 1. Check New Provider Registry (Prioritize Modular Architecture)
-      const aiProviders: Record<string, any> = { openai, mistral };
-      const aiProvider = aiProviders[model.provider];
-
-      if (aiProvider && typeof aiProvider.createConnection === 'function') {
+      if (providerModule && typeof providerModule.createConnection === 'function') {
            try {
-               console.log(`[Router] Using Factory for ${model.provider}...`);
-               connection = aiProvider.createConnection(model.id);
+               console.log(`[Router] Initializing ${model.provider} connection for ${model.id}...`);
+               const connection = providerModule.createConnection(model.id);
+               return new Gateway(model.id, connection);
            } catch (e) {
                console.error(`Factory failed for ${model.provider}`, e);
            }
       }
 
-      // 2. Legacy Fallback
-      if (!connection) {
-        switch (providerConfig.apiConfig.adapterType) {
-            case 'openai':
-                connection = new OpenAIConnection(model.id, {
-                    baseURL: (providerConfig.apiConfig as any).baseURL, 
-                    apiKey: apiKey
-                });
-                break;
-            case 'anthropic':
-                connection = new AnthropicConnection(model.id, apiKey);
-                break;
-            case 'mistral':
-                 connection = MistralProvider.createConnection(model.id);
-                 break;
-            case 'google':
-                 // TODO: Implement GoogleConnection
-                 break;
-            case 'native':
-                 if (model.provider === 'huggingface') {
-                      connection = new HuggingFaceConnection(model.id, apiKey);
-                 }
-                 break;
-        }
-      }
-
-      if (connection) {
-          return new Gateway(model.id, connection);
-      }
-      
+      console.warn(`[Router] No provider found for ${model.provider}`);
       return null;
   }
   
@@ -170,19 +130,12 @@ class UnifiedRouter {
     let titleModelId = 'gpt-4o-mini'; // Default Fallback
     let titleProviderId = 'openai';
 
-    // Check Modern Registry First
-    const aiProviders: Record<string, any> = { openai, mistral };
-    const providerDef = aiProviders[currentModelDef.provider];
+    // Check Unified Registry First
+    const providerDef = (aiProviders as Record<string, any>)[currentModelDef.provider];
 
     if (providerDef && providerDef.titleModelId) {
         titleModelId = providerDef.titleModelId;
         titleProviderId = currentModelDef.provider;
-    } else {
-        // Legacy Fallback Logic
-        if (currentModelDef.provider === 'anthropic') {
-             titleModelId = 'claude-3-haiku-20240307';
-             titleProviderId = 'anthropic';
-        }
     }
 
     // 3. Ensure the Title Model is initialized

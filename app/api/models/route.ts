@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchAllModels } from "@/lib/api/model-service";
+import { fetchAllModels } from "@/lib/ai/model-service";
 
 export async function GET() {
   const models = await fetchAllModels();
