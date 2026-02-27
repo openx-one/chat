@@ -330,7 +330,7 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
                             
                             chatStore.addReasoningStep(assistantMsgId, {
                                 id: chunk.tool_call.id,
-                                thought: `Using tool ${chunk.tool_call.function.name}...`,
+                                thought: chunk.thought || `Using tool ${chunk.tool_call.function.name}...`,
                                 status: "thinking",
                                 timestamp: Date.now(),
                                 toolName: chunk.tool_call.function.name,
@@ -382,30 +382,37 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
             </div>
         )}
 
+        {/* Mobile Header Background */}
+        <div className="fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-[#09090B] backdrop-blur-md z-40 md:hidden" />
+
         {/* Floating Controls Layer (Z-Index High) */}
-        <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-40 pointer-events-none">
-             {/* ... Model Selector ... */}
+        <div className="absolute top-0 left-0 right-0 p-3 md:p-4 flex justify-between items-center z-40 pointer-events-none">
+             {/* Left side: Menu & Model Selector */}
              <div className="pointer-events-auto flex items-center gap-2">
                 {user && (
                     <button
                         onClick={() => chatStore.setIsMobileSidebarOpen(!chatStore.isMobileSidebarOpen)}
-                        className="md:hidden flex items-center justify-center p-2 rounded-xl bg-[#121212]/80 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 transition-colors shadow-lg"
+                        className="md:hidden flex items-center justify-center p-2 rounded-xl bg-neutral-100/50 dark:bg-[#121212]/80 backdrop-blur-md text-neutral-600 dark:text-white hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors shadow-sm"
                         aria-label="Toggle Sidebar"
                     >
                         <Menu className="h-5 w-5" />
                     </button>
                 )}
                 {user ? (
-                   <>
+                   <div className="flex items-center gap-2">
                       <ModelSelector 
                           currentModel={model as any} 
                           onModelChange={(m) => setModel(m as any)} 
                           isTemp={isTemp}
                           onTempChange={setIsTemp}
                       />
-                      <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
-                   </>
+                      <div className="hidden md:block h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
+                   </div>
                 ) : null}
+            </div>
+
+            {/* Right side: New Chat & Auth */}
+            <div className="pointer-events-auto flex items-center gap-2">
                 <button
                     onClick={() => {
                         chatStore.reset();
@@ -416,26 +423,24 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
                     <SquarePen className="h-4 w-4" />
                     <span className="hidden sm:inline-block">New Chat</span>
                 </button>
+
+                {!user && (
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => router.push('/login')}
+                            className="px-4 py-1.5 rounded-full text-sm font-medium bg-neutral-100/50 dark:bg-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-all text-neutral-700 dark:text-neutral-200"
+                        >
+                            Log in
+                        </button>
+                        <button
+                            onClick={() => router.push('/signup')}
+                            className="px-4 py-1.5 rounded-full text-sm font-medium bg-neutral-900 text-white dark:bg-white dark:text-black hover:opacity-90 transition-all"
+                        >
+                            Sign up
+                        </button>
+                    </div>
+                )}
             </div>
-            {/* Auth Buttons for Unauthenticated Users */}
-            {!user && (
-                <div className="pointer-events-auto flex items-center gap-2">
-                    <button
-                        onClick={() => router.push('/login')}
-                        className="px-4 py-1.5 rounded-full text-sm font-medium bg-neutral-100/50 dark:bg-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-all text-neutral-700 dark:text-neutral-200"
-                    >
-                        Log in
-                    </button>
-                    <button
-                        onClick={() => router.push('/signup')}
-                        className="px-4 py-1.5 rounded-full text-sm font-medium bg-neutral-900 text-white dark:bg-white dark:text-black hover:opacity-90 transition-all"
-                    >
-                        Sign up
-                    </button>
-                </div>
-            )}
-             {/* ... Temp Toggle ... */}
-             {/* ... Temp Toggle Moved to ModelSelector ... */}
         </div>
 
         {/* Main Content Area */}
@@ -445,7 +450,7 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
                     <ChatWelcome onSend={(content, attachments) => handleSend(content, attachments)} />
                 ) : (
                     <div className="flex flex-col min-h-full">
-                        <div className="flex-1 pt-14">
+                        <div className="flex-1 pt-20 md:pt-14">
                             {sessionMCPStore.pendingEnableRequest && (
                                 <div className="px-4 mb-4 max-w-3xl mx-auto">
                                     <MCPEnablePrompt

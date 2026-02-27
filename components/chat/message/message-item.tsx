@@ -12,7 +12,7 @@ import { MessageContent } from "./message-content";
 import { FileText, Globe } from "lucide-react";
 import { SearchResult } from "@/lib/tools/web-search";
 import { ReasoningDisplay } from "@/components/chat/reasoning-display";
-import FramerLoading from "@/components/chat/framer-loading";
+// import FramerLoading from "@/components/chat/framer-loading";
 // import { toolActivityStore } from "@/lib/store/tool-activity-store"; // Removed
 
 interface MessageItemProps {
@@ -30,7 +30,7 @@ interface MessageItemProps {
 }
 
 export const MessageItem = observer(({ 
-    message, isStreaming, onRegenerate, onEdit, onBranch, citations,
+    message, isStreaming, onEdit, onBranch, citations,
     currentVersion, totalVersions, onPrevVersion, onNextVersion
 }: MessageItemProps) => {
   if (citations && citations.length > 0) {
@@ -112,25 +112,14 @@ export const MessageItem = observer(({
 
         {/* Reasoning Display (Persisted) */}
         {((message.reasoningSteps && message.reasoningSteps.length > 0) || (isStreaming && !message.content)) && (
-             <div className={cn("w-full max-w-[85%] opacity-90 transition-opacity", isUser ? "self-end" : "self-start")}>
-                 
-                 {/* Only show the "Thinking" dropdown IF a tool is actually being utilized */}
-                 {message.reasoningSteps && message.reasoningSteps.length > 0 && (
-                     <ReasoningDisplay 
-                         steps={message.reasoningSteps}
-                         connectedTo={message.activeIntegration}
-                         citations={message.citations}
-                         isCollapsed={true} // Auto-expand if active
-                         isGenerating={isStreaming}
-                     />
-                 )}
-                 
-                 {/* Standalone Loading Indicator - Shown before text is generated, or while tools are still thinking */}
-                 {(isStreaming && !message.content || (message.reasoningSteps || []).some(s => s.status === 'thinking')) && (
-                     <div className="mt-2 flex items-center justify-start h-8 pl-1 mb-2">
-                         <FramerLoading />
-                     </div>
-                 )}
+             <div className={cn("w-full opacity-90 transition-opacity", isUser ? "self-end max-w-[85%]" : "self-start w-full")}>
+                 <ReasoningDisplay 
+                     steps={message.reasoningSteps || []}
+                     connectedTo={message.activeIntegration}
+                     citations={message.citations}
+                     isCollapsed={true} // Auto-expand if active
+                     isGenerating={isStreaming}
+                 />
              </div>
         )}
 

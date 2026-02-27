@@ -72,7 +72,7 @@ export function MessageActions({
         return (
             <div className={cn(
                  "flex items-center gap-0.5 transition-opacity",
-                 "justify-end opacity-0 group-hover:opacity-100" 
+                 "justify-end opacity-100" 
              )}>
                 {hasVersions && versionNav}
                 

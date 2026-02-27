@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { ReasoningStep } from "@/lib/store/chat-store";
 import { motion, AnimatePresence } from "framer-motion";
 import { observer } from "mobx-react-lite";
+import Loading from "./framer-loading";
 
 interface ReasoningDisplayProps {
     steps: ReasoningStep[];
@@ -37,22 +38,30 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
         else setCollapsed(!collapsed);
     };
 
-    const isThinking = isGenerating || steps.some(s => s.status === 'thinking');
+    // Unified Thinking State
+    const hasActiveTool = steps.some(s => s.status === 'thinking');
+    const isInitialThinking = isGenerating && steps.length === 0;
+    const isThinking = hasActiveTool || isInitialThinking;
 
     // Grouping Logic
     const searchSteps = steps.filter(s => s.toolName === 'web_search');
     const otherSteps = steps.filter(s => s.toolName !== 'web_search');
 
     const getCurrentStateLabel = () => {
-        // Priority 1: Active Tool Call (specific label)
+        // Priority 1: Active Tool Call (specific label from executor)
         const activeToolStep = steps.find(s => s.status === 'thinking' && s.toolName);
         if (activeToolStep) {
             return activeToolStep.thought;
         }
 
+        // Priority 2: Initial Gate (Initial model reasoning/planning)
+        if (isInitialThinking) {
+            return "Thinking...";
+        }
+
         if (!isThinking) return "Done";
 
-        // Priority 2: Analyzing search results
+        // Priority 3: Analyzing search results
         if (citations && citations.length > 0) return "Analyzing sources...";
         
         return "Thinking...";
@@ -81,23 +90,30 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
                     )}>
                         
                         {isThinking ? (
-                            <motion.span 
-                                className="font-semibold tracking-wide text-transparent bg-clip-text"
-                                style={{
-                                    backgroundImage: "linear-gradient(135deg, #51565A 30%, #FFFFFF 50%, #51565A 70%)",
-                                    backgroundSize: "200% 100%",
-                                }}
-                                animate={{ backgroundPosition: ["200% 0", "-200% 0"] }}
-                                transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-                            >
-                                {currentStateLabel}
-                            </motion.span>
+                            <div className="flex items-center gap-2 h-full">
+                                {currentStateLabel !== "Thinking..." && (
+                                    <div className="flex items-center justify-center shrink-0">
+                                        <Loading />
+                                    </div>
+                                )}
+                                <motion.span 
+                                    className="font-semibold tracking-wide text-transparent bg-clip-text inline-flex items-center leading-none"
+                                    style={{
+                                        backgroundImage: "linear-gradient(135deg, #51565A 30%, #FFFFFF 50%, #51565A 70%)",
+                                        backgroundSize: "200% 100%",
+                                    }}
+                                    animate={{ backgroundPosition: ["200% 0", "-200% 0"] }}
+                                    transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+                                >
+                                    {currentStateLabel}
+                                </motion.span>
+                            </div>
                         ) : (
-                            <span className="tracking-wide text-neutral-500 dark:text-neutral-400">
+                            <span className="tracking-wide text-neutral-500 dark:text-neutral-400 font-medium inline-flex items-center leading-none">
                                 {currentStateLabel}
                             </span>
                         )}
-                        <span className="text-neutral-500 ml-1">
+                        <span className="text-neutral-500/50 pt-0.5 flex items-center justify-center translate-y-[0.5px]">
                             {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                         </span>
                     </div>
@@ -150,7 +166,7 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
                                     <div className="flex items-center gap-2 text-xs font-medium text-neutral-400 uppercase tracking-wider">
                                         Analyzing Sources...
                                     </div>
-                                    <div className="flex flex-col gap-1">
+                                    <div className="flex flex-col gap-1 w-full">
                                         {citations.map((cite, idx) => (
                                             <a 
                                                 key={idx} 
@@ -171,7 +187,7 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
                                                     <span className="text-xs text-neutral-500">
                                                         {(cite.source || getHostname(cite.url)).replace('www.', '')}
                                                     </span>
-                                                    <ExternalLink className="h-3 w-3 text-neutral-600 opacity-0 group-hover/cite:opacity-100 transition-opacity" />
+                                                    <ExternalLink className="h-3 w-3 text-neutral-600 opacity-40 group-hover/cite:opacity-100 transition-opacity" />
                                                 </div>
                                             </a>
                                         ))}

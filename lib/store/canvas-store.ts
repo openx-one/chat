@@ -4,7 +4,8 @@ class CanvasStore {
     isOpen = false;
     content = "";
     language = "markdown";
-    isVisible = false; // For animation purposes maybe?
+    isVisible = false; 
+    autoRun = false; // Flag to trigger execution on mount
 
     chatId: string | null = null;
     saveTimer: NodeJS.Timeout | null = null;
@@ -31,9 +32,10 @@ class CanvasStore {
         this.triggerAutoSave();
     }
 
-    openWithContent(content: string, language: string = "markdown") {
+    openWithContent(content: string, language: string = "markdown", autoRun: boolean = false) {
         this.content = content;
         this.language = language;
+        this.autoRun = autoRun;
         this.isOpen = true;
         this.triggerAutoSave();
     }
@@ -42,6 +44,7 @@ class CanvasStore {
         this.isOpen = false;
         this.content = "";
         this.language = "markdown";
+        this.autoRun = false;
         this.chatId = null;
     }
 

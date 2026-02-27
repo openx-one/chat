@@ -13,7 +13,7 @@ import { StockCard, StockSkeleton } from '@/components/chat/Widgets/stock-card';
 import { ImageCarousel, GallerySkeleton } from '@/components/chat/Widgets/image-carousel';
 import { WeatherCard, WeatherSkeleton } from '@/components/chat/Widgets/weather-card';
 import { canvasStore } from "@/lib/store/canvas-store";
-import { Copy, FileCode } from "lucide-react";
+import { Copy, FileCode, Play } from "lucide-react";
 
 interface MarkdownRendererProps {
   content: string;
@@ -76,27 +76,51 @@ export const MarkdownRenderer = React.memo(({ content }: MarkdownRendererProps) 
               return <GallerySkeleton />;
           }
 
+          const lang = match ? match[1] : '';
+          const isShell = ['bash', 'sh', 'shell', 'zsh', 'pip', 'pip3', 'powershell'].includes(lang);
+          const isExecutable = ['python', 'javascript', 'typescript', 'html', 'css', 'markup', 'jsx', 'tsx'].includes(lang);
+
           return !inline && match ? (
             <div className="relative rounded-xl overflow-hidden my-2 border border-white/10 group">
-                <div className="flex items-center justify-between px-4 py-2 bg-[#1e1e1e] text-xs text-stone-400 select-none border-b border-white/5">
-                    <span>{match[1]}</span>
+                <div className="flex items-center justify-between px-4 py-2 bg-[#1e1e1e] text-xs text-stone-400 select-none">
+                    <span>{lang}</span>
 
                     <div className="flex items-center gap-3">
-                        <button 
-                            onClick={() => canvasStore.openWithContent(String(children), match[1])}
-                            className="flex items-center gap-1.5 text-xs font-medium text-stone-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
-                            title="Open in Canvas"
-                        >
-                            <FileCode className="h-3.5 w-3.5" />
-                            <span className="hidden sm:inline-block">Canvas</span>
-                        </button>
-                        <div className="h-3 w-px bg-white/10 opacity-0 group-hover:opacity-100" />
+                        {isExecutable && (
+                            <button 
+                                onClick={() => {
+                                    canvasStore.openWithContent(String(children), lang, true);
+                                }}
+                                className="flex items-center gap-1.5 text-xs font-medium text-purple-400 hover:text-purple-300 transition-colors"
+                                title="Run Code"
+                            >
+                                <Play className="h-3.5 w-3.5" />
+                                <span className="hidden sm:inline-block">Run</span>
+                            </button>
+                        )}
+                        
+                        {!isShell && (
+                            <>
+                                {isExecutable && <div className="h-3 w-px bg-white/10" />}
+                                <button 
+                                    onClick={() => canvasStore.openWithContent(String(children), lang)}
+                                    className="flex items-center gap-1.5 text-xs font-medium text-stone-400 hover:text-white transition-colors"
+                                    title="Open in Canvas"
+                                >
+                                    <FileCode className="h-3.5 w-3.5" />
+                                    <span className="hidden sm:inline-block">Canvas</span>
+                                </button>
+                            </>
+                        )}
+
+                        <div className="h-3 w-px bg-white/10" />
+                        
                         <button 
                             onClick={() => {
                                 navigator.clipboard.writeText(String(children));
-                                // Optional: Toast feedback here
                             }} 
-                            className="flex items-center gap-1.5 text-xs font-medium text-stone-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                            className="flex items-center gap-1.5 text-xs font-medium text-stone-400 hover:text-white transition-colors"
+                            title="Copy Code"
                         >
                             <Copy className="h-3.5 w-3.5" />
                             <span className="hidden sm:inline-block">Copy</span>

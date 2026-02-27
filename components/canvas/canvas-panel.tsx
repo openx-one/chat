@@ -48,6 +48,25 @@ export const CanvasPanel = observer(() => {
         return () => window.removeEventListener('message', handleMessage);
     }, []);
 
+    // Handle Auto-Run on open
+    React.useEffect(() => {
+        if (canvasStore.autoRun && canvasStore.isOpen) {
+             const isPython = canvasStore.language === 'python';
+             const isHtml = canvasStore.language === 'html' || canvasStore.language === 'markup';
+
+             if (isPython) {
+                // Wait slightly for iframe to be ready
+                setTimeout(() => runPython(), 500);
+             } else if (isHtml) {
+                 // For HTML, just being in Preview tab is enough
+                 // But we should ensure the preview tab is active if that's the "Run" intent
+             }
+             
+             // Reset the flag so it doesn't run again on internal state changes
+             canvasStore.autoRun = false;
+        }
+    }, [canvasStore.isOpen, canvasStore.autoRun]);
+
     const runPython = () => {
         if (!iframeRef.current) return;
         setConsoleOutput([]); // Clear previous

@@ -165,6 +165,6 @@ export function WeatherCard({ data }: { data: any }) {
 
 export function WeatherSkeleton() {
     return (
-        <div className="w-full max-w-2xl mx-auto h-[400px] rounded-3xl bg-[#0a0a0a] border border-white/10 animate-pulse" />
+        <div className="w-full max-w-full mx-auto h-[400px] rounded-3xl bg-[#0a0a0a] border border-white/10 animate-pulse" />
     );
 }

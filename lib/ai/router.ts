@@ -17,8 +17,8 @@ export type StreamChunk =
   | { type: "text"; content: string }
   | { type: "usage"; stats: { tokensPerSec: number; totalTokens: number; timeToFirstToken: number; stopReason: string; } }
   | { type: "tool_result"; content: string; name: string; tool_call_id: string }
-  | { type: "tool_call"; tool_call: any }
-  | { type: "tool_call_chunk"; tool_call: any };
+  | { type: "tool_call"; tool_call: any; thought?: string }
+  | { type: "tool_call_chunk"; tool_call: any; thought?: string };
 
 export interface ModelAdapter {
   id: string;

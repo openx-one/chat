@@ -115,7 +115,7 @@ export function StockCard({ data: initialData }: { data: StockData }) {
     };
 
     return (
-        <div className="w-full bg-white dark:bg-[#1e1e1e] rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-sm overflow-hidden my-4 font-sans text-neutral-900 dark:text-neutral-100">
+        <div className="w-full bg-white dark:bg-[#1e1e1e] rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-sm overflow-hidden font-sans text-neutral-900 dark:text-neutral-100">
             {/* Header */}
             <div className="p-5 border-b border-neutral-100 dark:border-neutral-800">
                 <div className="flex justify-between items-start mb-1">
@@ -363,7 +363,7 @@ export function StockCard({ data: initialData }: { data: StockData }) {
 
 export function StockSkeleton() {
     return (
-        <div className="w-full bg-white dark:bg-[#1e1e1e] rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-sm overflow-hidden my-4 font-sans max-w-full">
+        <div className="w-full bg-white dark:bg-[#1e1e1e] rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-sm overflow-hidden font-sans max-w-full">
             {/* Header Skeleton */}
             <div className="p-5 border-b border-neutral-100 dark:border-neutral-800">
                 <div className="flex justify-between items-start mb-1">

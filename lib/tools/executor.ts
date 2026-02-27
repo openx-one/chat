@@ -74,6 +74,24 @@ export class ToolExecutor {
             sanitizedMessages.push(assistantMsg);
         }
 
+        // Get dynamic friendly label for tool
+        let friendlyLabel = "";
+        const toolLabelMap: Record<string, (args: any) => string> = {
+            'web_search': () => "Searching Internet...",
+            'get_weather': (args) => `Checking weather in ${args.city || "requested city"}...`,
+            'get_stock': (args) => `Checking price of ${args.symbol || "requested asset"}...`,
+            'gmail_action': () => "Calling Gmail Agent...",
+            'youtube_action': () => "Calling YouTube Agent...",
+        };
+
+        const labelFn = toolLabelMap[toolName];
+        if (labelFn) {
+            friendlyLabel = labelFn(args);
+        } else {
+            const baseName = toolName.split('_')[0] || toolName;
+            friendlyLabel = `Calling ${baseName.charAt(0).toUpperCase() + baseName.slice(1)} Agent...`;
+        }
+
         // Yield the consolidated tool call to the client (so UI knows we are "calling X")
         yield { 
             type: "tool_call", 
@@ -81,7 +99,8 @@ export class ToolExecutor {
                 id: callId,
                 function: { name: toolName, arguments: toolCallBuffer.function.arguments },
                 type: "function"
-            }
+            },
+            thought: friendlyLabel
         };
 
         // ------------ MCP CONSENT CHECK ------------
@@ -176,21 +195,6 @@ export class ToolExecutor {
 
         // 2. Execute via Registry
         
-        // Get friendly label for tool
-        const toolLabels: Record<string, string> = {
-            'web_search': 'Calling Search Agent...',
-            'get_stock': 'Calling Finance Agent...',
-            'gmail_action': 'Calling Gmail Agent...',
-            'youtube_action': 'Calling YouTube Agent...',
-        };
-        
-        
-        let friendlyLabel = toolLabels[toolName];
-        if (!friendlyLabel) {
-            const baseName = toolName.split('_')[0] || toolName;
-            friendlyLabel = `Calling ${baseName.charAt(0).toUpperCase() + baseName.slice(1)} Agent...`;
-        }
-
         // Notify chat store
         import("@/lib/store/chat-store").then(({ chatStore }) => {
             chatStore.setCurrentToolExecution({ name: toolName, label: friendlyLabel });
