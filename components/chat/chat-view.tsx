@@ -390,13 +390,13 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
              {/* Left side: Menu & Model Selector */}
              <div className="pointer-events-auto flex items-center gap-2">
                 {user && (
-                    <button
-                        onClick={() => chatStore.setIsMobileSidebarOpen(!chatStore.isMobileSidebarOpen)}
-                        className="md:hidden flex items-center justify-center p-2 rounded-xl bg-neutral-100/50 dark:bg-[#121212]/80 backdrop-blur-md text-neutral-600 dark:text-white hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors shadow-sm"
-                        aria-label="Toggle Sidebar"
-                    >
-                        <Menu className="h-5 w-5" />
-                    </button>
+                        <button
+                            onClick={() => chatStore.setIsMobileSidebarOpen(!chatStore.isMobileSidebarOpen)}
+                            className="md:hidden flex items-center justify-center p-2 rounded-xl bg-neutral-100/50 dark:bg-[#121212]/80 backdrop-blur-md text-neutral-600 dark:text-white hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors shadow-sm"
+                            aria-label="Toggle Sidebar"
+                        >
+                            <Menu className="h-5 w-5" />
+                        </button>
                 )}
                 {user ? (
                    <div className="flex items-center gap-2">
@@ -409,19 +409,35 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
                       <div className="hidden md:block h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
                    </div>
                 ) : null}
+                
+                {/* Desktop New Chat (Moved to right of selector) */}
+                {user && (
+                    <div className="hidden md:flex items-center">
+                        <button
+                            onClick={() => {
+                                chatStore.reset();
+                                router.push('/');
+                            }}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-neutral-100/50 dark:bg-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-all border border-neutral-200/50 dark:border-neutral-700/50 text-neutral-600 dark:text-neutral-300"
+                        >
+                            <SquarePen className="h-4 w-4" />
+                            <span>New Chat</span>
+                        </button>
+                    </div>
+                )}
             </div>
 
-            {/* Right side: New Chat & Auth */}
+            {/* Right side: New Chat (mobile) & Auth */}
             <div className="pointer-events-auto flex items-center gap-2">
+                {/* Mobile New Chat */}
                 <button
                     onClick={() => {
                         chatStore.reset();
                         router.push('/');
                     }}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-neutral-100/50 dark:bg-neutral-800/50 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-all border border-neutral-200/50 dark:border-neutral-700/50 text-neutral-600 dark:text-neutral-300"
+                    className="md:hidden flex items-center justify-center p-2 rounded-xl bg-neutral-100/50 dark:bg-[#121212]/80 backdrop-blur-md text-neutral-600 dark:text-white hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors shadow-sm"
                 >
-                    <SquarePen className="h-4 w-4" />
-                    <span className="hidden sm:inline-block">New Chat</span>
+                    <SquarePen className="h-5 w-5" />
                 </button>
 
                 {!user && (
