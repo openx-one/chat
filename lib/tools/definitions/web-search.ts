@@ -4,7 +4,7 @@ import { searchWeb } from "../web-search";
 export const webSearchTool: Tool = {
     definition: {
         name: "web_search",
-        description: "Search the web for current information, news, or specific facts.",
+        description: "Search the web for news, facts, or general info. IMPORTANT: Do NOT use this for stock prices; use 'get_stock' instead. Do NOT use this for weather; use 'get_weather' instead.",
         parameters: {
             type: "object",
             properties: {

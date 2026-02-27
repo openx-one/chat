@@ -178,18 +178,23 @@ export class ToolExecutor {
         
         // Get friendly label for tool
         const toolLabels: Record<string, string> = {
-            'web_search': 'Searching the web',
-            'get_stock': 'Fetching stock data',
-            'gmail_action': 'Using Gmail',
-            'youtube_action': 'Using YouTube',
+            'web_search': 'Calling Search Agent...',
+            'get_stock': 'Calling Finance Agent...',
+            'gmail_action': 'Calling Gmail Agent...',
+            'youtube_action': 'Calling YouTube Agent...',
         };
         
-        const friendlyLabel = toolLabels[toolName] || `Using ${toolName.split('_')[0] || toolName}`;
+        
+        let friendlyLabel = toolLabels[toolName];
+        if (!friendlyLabel) {
+            const baseName = toolName.split('_')[0] || toolName;
+            friendlyLabel = `Calling ${baseName.charAt(0).toUpperCase() + baseName.slice(1)} Agent...`;
+        }
 
         // Notify chat store
         import("@/lib/store/chat-store").then(({ chatStore }) => {
             chatStore.setCurrentToolExecution({ name: toolName, label: friendlyLabel });
-            if (toolName === 'web_search' || toolName === 'get_stock') {
+            if (toolName === 'web_search') {
                 chatStore.setIsSearching(true);
             }
         });

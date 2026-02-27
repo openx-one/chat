@@ -37,7 +37,7 @@ export class MistralAdapter implements ModelConnection {
                  return {
                      role: "assistant",
                      content: finalContent,
-                     toolCalls: toolCallsMapped?.length ? toolCallsMapped : undefined
+                     tool_calls: toolCallsMapped?.length ? toolCallsMapped : undefined
                  };
              }
              
@@ -45,7 +45,7 @@ export class MistralAdapter implements ModelConnection {
                  return {
                      role: "tool",
                      content: content || "",
-                     toolCallId: m.toolCallId || m.tool_call_id
+                     tool_call_id: m.tool_call_id || m.toolCallId
                  };
              }
 
@@ -55,15 +55,15 @@ export class MistralAdapter implements ModelConnection {
          // Final filter to ensure no empty messages reach the SDK
          const validMessages = processedMessages.filter(m => {
              if (m.role === 'assistant') {
-                 return (!!m.content && m.content.length > 0) || (!!m.toolCalls && m.toolCalls.length > 0);
+                 return (!!m.content && m.content.length > 0) || (!!m.tool_calls && m.tool_calls.length > 0);
              }
-             if (m.role === 'tool') return !!m.content && !!m.toolCallId;
+             if (m.role === 'tool') return !!m.content && !!m.tool_call_id;
              return !!m.content;
          });
 
          console.log(`[MistralAdapter:${this.id}] Payload for Mistral:`);
          validMessages.forEach((m, i) => {
-            console.log(`  [${i}] role=${m.role} hasContent=${!!m.content} hasTC=${!!m.toolCalls?.length} TC_ID=${m.toolCallId || ''}`);
+            console.log(`  [${i}] role=${m.role} hasContent=${!!m.content} hasTC=${!!m.tool_calls?.length} TC_ID=${m.tool_call_id || ''}`);
          });
 
          const params: any = {

@@ -181,7 +181,7 @@ export const MarkdownRenderer = React.memo(({ content }: MarkdownRendererProps) 
             return <p className="leading-relaxed [&:not(:first-child)]:mt-4">{children}</p>;
         },
         pre({ children   }) {
-            return <div className="not-prose my-4">{children}</div>;
+            return <div className="not-prose my-1">{children}</div>;
         },
         h1({ children }) {
             return <h1 className="text-2xl font-semibold tracking-tight mt-6 mb-3">{children}</h1>;

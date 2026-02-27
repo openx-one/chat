@@ -4,7 +4,7 @@ import { getStockData } from "@/lib/stocks/stockTool";
 export const stockTool: Tool = {
     definition: {
         name: "get_stock",
-        description: "Get real-time stock quote. YOU MUST provide a 1-sentence summary of the price/trend along with the finance widget.",
+        description: "Fetch real-time stock prices, crypto rates, or market data. ALWAYS use this tool first when a user mentions a stock symbol (e.g. AAPL, TSLA) or asks for price data. Do NOT use web search for ticker prices if this tool can handle it.",
         parameters: {
             type: "object",
             properties: {

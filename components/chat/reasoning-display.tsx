@@ -46,9 +46,13 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
     const getCurrentStateLabel = () => {
         if (!isThinking) return "Done";
         
-        if (searchSteps.some(s => s.status === 'thinking')) return "Searching Internet...";
-        
-        // If we have citations but the model is still generating (forceThinking or other steps)
+        // Priority 1: Active Tool Call (specific label)
+        const activeToolStep = steps.find(s => s.status === 'thinking' && s.toolName);
+        if (activeToolStep) {
+            return activeToolStep.thought;
+        }
+
+        // Priority 2: Analyzing search results
         if (citations && citations.length > 0) return "Analyzing sources...";
         
         return "Thinking...";
@@ -65,7 +69,7 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
     };
 
     return (
-        <div className={cn("flex flex-col gap-2 font-sans select-none", className)}>
+        <div className={cn("flex flex-col font-sans select-none", className)}>
             {/* Header / Trigger - Shining Think */}
              <div className="flex flex-wrap items-center gap-3">
                 <button
@@ -117,13 +121,13 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
                         exit={{ height: 0, opacity: 0 }}
                         className="overflow-hidden"
                     >
-                        <div className="flex flex-col gap-4 pl-2 pt-2 pb-4 border-l border-neutral-800 ml-4">
+                        <div className="flex flex-col gap-2 pl-1.5 pt-1.5 pb-1.5 border-l border-neutral-800 ml-4">
                             
                             {/* 1. Searching Section (Robust) */}
                             {searchSteps.length > 0 && (
                                 <div className="flex flex-col gap-2">
                                     <div className="flex items-center gap-2 text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                                        Searching..
+                                        Calling Search Agent..
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {searchSteps.map((step) => {

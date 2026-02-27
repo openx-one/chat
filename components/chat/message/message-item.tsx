@@ -112,7 +112,7 @@ export const MessageItem = observer(({
 
         {/* Reasoning Display (Persisted) */}
         {((message.reasoningSteps && message.reasoningSteps.length > 0) || (isStreaming && !message.content)) && (
-             <div className={cn("w-full max-w-[85%] mb-2 opacity-90 transition-opacity", isUser ? "self-end" : "self-start")}>
+             <div className={cn("w-full max-w-[85%] opacity-90 transition-opacity", isUser ? "self-end" : "self-start")}>
                  
                  {/* Only show the "Thinking" dropdown IF a tool is actually being utilized */}
                  {message.reasoningSteps && message.reasoningSteps.length > 0 && (
