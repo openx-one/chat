@@ -8,7 +8,7 @@ import { observer } from "mobx-react-lite";
 // import { modelRouter } from "@/lib/ai/router"; // Removed: Server side only
 import { chatStore } from "@/lib/store/chat-store";
 import { canvasStore } from "@/lib/store/canvas-store";
-import { createChat, createChatBranch, saveMessage, fetchMessages, updateChatTitle } from "@/lib/supabase/db";
+import { createChat, createChatBranch, saveMessage, fetchMessages, updateChatTitle, updateChat } from "@/lib/supabase/db";
 import { ChatInput } from "@/components/chat/input/chat-input";
 import { ChatWelcome } from "@/components/chat/chat-welcome";
 import { MessageList } from "@/components/chat/message-list";
@@ -144,7 +144,41 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
         if (!isTemp && user) {
             if (!currentChatId || currentChatId === chatId) { 
                 if (!currentChatId) {
+                    // 1. Instant Optimistic UI Update (Sidebar)
+                    const tempId = uuidv4();
+                    const initialTitle = finalContent.trim() ? finalContent.slice(0, 30) + (finalContent.length > 30 ? '...' : '') : "New Chat";
+                    
+                    chatStore.addOptimisticChat({
+                        id: tempId,
+                        title: initialTitle,
+                        created_at: new Date().toISOString(),
+                    });
+                    chatStore.setTitle(initialTitle);
+
+                    // 1.5 Pure React State Injection to guarantee instant Sidebar render
+                    window.dispatchEvent(new CustomEvent('chat-created-optimistic', {
+                        detail: { chat: { id: tempId, title: initialTitle, created_at: new Date().toISOString() } }
+                    }));
+
+                    // 2. Await Real DB Creation
                     const newChat = await createChat("New Chat"); 
+                    
+                    // 3. Swap temporary ID for real ID in UI
+                    chatStore.removeOptimisticChat(tempId);
+                    chatStore.addOptimisticChat({
+                        id: newChat.id,
+                        title: initialTitle,
+                        created_at: new Date().toISOString(),
+                    });
+
+                    // 4. Force Sidebar React state swap and fetch immediately
+                    window.dispatchEvent(new CustomEvent('chats-updated', {
+                        detail: { 
+                            tempId, 
+                            chat: { id: newChat.id, title: initialTitle, created_at: newChat.created_at || new Date().toISOString() } 
+                        }
+                    }));
+
                     chatStore.setChatId(newChat.id);
                     canvasStore.setChatId(newChat.id); // Sync Canvas
                     currentChatId = newChat.id;
@@ -155,6 +189,11 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
             const userMsgNode = chatStore.messages.get(userMsgId);
             if (userMsgNode) {
                 await saveMessage(currentChatId!, userMsgNode);
+                if (!isNewChat) {
+                    // Bump updated_at for existing chat to reorder sidebar
+                    await updateChat(currentChatId!, {});
+                    window.dispatchEvent(new CustomEvent('chat-bumped', { detail: { id: currentChatId } }));
+                }
             }
 
             if (isNewChat) {
@@ -183,6 +222,10 @@ export const ChatView = observer(({ chatId }: ChatViewProps) => {
                  if (data.title && currentChatId) {
                      updateChatTitle(currentChatId, data.title);
                      chatStore.setTitle(data.title); // Update UI immediately
+                     // Dispatch event for Sidebar to update its local 'chats' array instantly
+                     window.dispatchEvent(new CustomEvent('chat-title-updated', { 
+                         detail: { id: currentChatId, title: data.title } 
+                     }));
                  }
              })
              .catch(err => console.error("Failed to auto-generate title", err));

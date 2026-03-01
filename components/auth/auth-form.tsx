@@ -53,7 +53,8 @@ export function UserAuthForm({ className, view, ...props }: UserAuthFormProps) {
         const { error } = await supabase.auth.signInWithOtp({
             email: emailValue,
             options: {
-                emailRedirectTo: `${window.location.origin}/`,
+                // Remove emailRedirectTo as it can force the email to be formatted as a pure magic link
+                // instead of highlighting the 6-digit OTP code in some Supabase configurations.
                 shouldCreateUser: view === "signup"
             },
         })
@@ -96,6 +97,11 @@ export function UserAuthForm({ className, view, ...props }: UserAuthFormProps) {
 
   const handleGoogleLogin = async () => {
       setIsLoading(true);
+      
+      // We restore redirectTo because the CF worker now rigidly enforces the
+      // Proxy domain as the OAuth redirect_uri via X-Forwarded-Host.
+      // Supabase uses this `redirectTo` attribute cleanly as the FINAL destination
+      // AFTER the proxy successfully completes the Google handshake.
       await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {

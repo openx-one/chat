@@ -57,15 +57,85 @@ export const Sidebar = observer(({ className, isOpen, onToggle }: SidebarProps) 
   // Fetch Chats
   React.useEffect(() => {
     if (!currentUser) { setChats([]); return; }
-    const initData = async () => {
+    const initData = async (forceBypassCache = false) => {
         const supabase = createClient();
-        const { data } = await supabase.from('chats').select('*').order('updated_at', { ascending: false });
-        if (data) setChats(data);
+        let query = supabase.from('chats').select('*').order('updated_at', { ascending: false });
+        
+        // Cloudflare Proxy aggressively caches GET requests. 
+        // We use a dummy filter to bust the edge cache when we need a guaranteed fresh list.
+        if (forceBypassCache) {
+             query = query.neq('id', `cache-bypass-${Date.now()}`);
+        }
+
+        const { data } = await query;
+        if (data) {
+            // CRITICAL FIX: Do not let a stale database fetch wipe out optimistic UI insertions.
+            // Merge the fetched data with any existing optimistic chats that haven't synced yet.
+            setChats(prev => {
+                const prevTempIds = new Set(chatStore.optimisticChats.map(c => c.id));
+                const dbIds = new Set(data.map((c: any) => c.id));
+                
+                // Keep chats that are in optimisticStore BUT not yet returned by DB
+                const unsyncedOptimistic = prev.filter(c => prevTempIds.has(c.id) && !dbIds.has(c.id));
+                
+                return [...unsyncedOptimistic, ...data];
+            });
+        }
     };
     initData();
     const supabase = createClient();
     const channel = supabase.channel('chats_realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => initData()).subscribe();
-    return () => { supabase.removeChannel(channel); }
+    
+    // Listen for optimistic title updates from ChatView to avoid realtime latency
+    const handleTitleUpdate = (e: any) => {
+        const { id, title } = e.detail;
+        setChats(prev => prev.map(c => c.id === id ? { ...c, title } : c));
+    };
+
+    // 1. Instant Optimistic Push
+    const handleOptimisticChat = (e: any) => {
+        if (e.detail?.chat) {
+            setChats(prev => [e.detail.chat, ...prev.filter(c => c.id !== e.detail.chat.id)]);
+        }
+    };
+
+    // 2. Real DB Sync Swap (Replace tempId with real ID)
+    const handleChatsUpdated = (e: any) => {
+        if (e.detail?.chat && e.detail?.tempId) {
+            setChats(prev => [e.detail.chat, ...prev.filter(c => c.id !== e.detail.tempId && c.id !== e.detail.chat.id)]);
+        }
+        initData(true); // Still fetch in background as a fallback
+    };
+
+    // 3. Bump existing chat to top
+    const handleChatBumped = (e: any) => {
+        const { id } = e.detail;
+        setChats(prev => {
+            const index = prev.findIndex(c => c.id === id);
+            if (index > -1) {
+                const target = prev[index];
+                const newChats = [...prev];
+                newChats.splice(index, 1);
+                newChats.unshift({ ...target, updated_at: new Date().toISOString() });
+                return newChats;
+            }
+            return prev;
+        });
+        initData(true);
+    };
+
+    window.addEventListener('chat-title-updated', handleTitleUpdate);
+    window.addEventListener('chat-created-optimistic', handleOptimisticChat);
+    window.addEventListener('chats-updated', handleChatsUpdated);
+    window.addEventListener('chat-bumped', handleChatBumped);
+
+    return () => { 
+        supabase.removeChannel(channel); 
+        window.removeEventListener('chat-title-updated', handleTitleUpdate);
+        window.removeEventListener('chat-created-optimistic', handleOptimisticChat);
+        window.removeEventListener('chats-updated', handleChatsUpdated);
+        window.removeEventListener('chat-bumped', handleChatBumped);
+    }
   }, [currentUser]);
 
   // Actions
@@ -200,8 +270,10 @@ export const Sidebar = observer(({ className, isOpen, onToggle }: SidebarProps) 
              
              <ScrollArea className="flex-1 w-full overflow-hidden px-1">
                  <div className="flex flex-col pb-2">
-                     {chats.map(chat => {
-                         const isActive = activeChatId === chat.id;
+                     {/* Merge optimistic and db chats, deduplicate by ID */}
+                     {[...chatStore.optimisticChats, ...chats].filter((c, i, s) => i === s.findIndex(t => t.id === c.id)).map(chat => {
+                         // Critical Fix: Use chatStore.title for the active chat even if it's already in the DB list
+                         const isActive = activeChatId === chat.id || chatStore.chatId === chat.id;
                          const displayTitle = (isActive && chatStore.title) ? chatStore.title : (chat.title || "New Chat");
 
                          return (

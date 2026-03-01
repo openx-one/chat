@@ -57,6 +57,7 @@ class ChatStore {
   personality: Personality = DEFAULT_PERSONALITY; // AI Personality
   isGenerating: boolean = false;
   isMobileSidebarOpen: boolean = false;
+  optimisticChats: { id: string, title: string, created_at: string, user_id?: string }[] = [];
 
   constructor() {
     makeAutoObservable(this);
@@ -69,6 +70,13 @@ class ChatStore {
 
   setTitle(title: string) {
       this.title = title;
+      // Also update optimistic chat if it matches current chat id
+      if (this.chatId) {
+          const optimisticChat = this.optimisticChats.find(c => c.id === this.chatId);
+          if (optimisticChat) {
+              optimisticChat.title = title;
+          }
+      }
   }
 
   hydrateSettings() {
@@ -135,6 +143,14 @@ class ChatStore {
 
   setIsGenerating(isGenerating: boolean) {
     this.isGenerating = isGenerating;
+  }
+
+  addOptimisticChat(chat: { id: string, title: string, created_at: string, user_id?: string }) {
+      this.optimisticChats = [chat, ...this.optimisticChats];
+  }
+
+  removeOptimisticChat(id: string) {
+      this.optimisticChats = this.optimisticChats.filter(c => c.id !== id);
   }
 
   isAnalyzing: boolean = false;
@@ -474,6 +490,7 @@ class ChatStore {
     this.currentLeafId = null;
     this.chatId = null;
     this.isGenerating = false;
+    // Do not clear optimisticChats on chat switch, let DB sync handle it
   }
 }
 

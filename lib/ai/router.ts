@@ -152,11 +152,18 @@ class UnifiedRouter {
 
     // 4. Generate
     try {
+        const historyText = messages
+            .filter(m => m.role !== 'system')
+            .map(m => `${m.role}: ${m.content}`)
+            .join('\n')
+            .substring(0, 1000);
+
         const titlePrompt = `
 Generate a concise, 3-5 word title for this conversation history. 
+If the conversation is just a simple greeting like "Hey" or "Hi", simply return "Greeting" or "New Conversation".
 Do not wrap in quotes. Do not say "Title:". Just the title.
 History:
-${messages.slice(1).map(m => `${m.role}: ${m.content}`).join('\n').substring(0, 1000)}
+${historyText}
 `;
         const titleMessages: MessageNode[] = [
             { id: 'sys', role: 'system', content: 'You are a helpful assistant.', parentId: null, childrenIds: [], activeChildId: null, createdAt: 0 },
