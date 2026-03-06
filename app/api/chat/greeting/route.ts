@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { modelRouter } from "@/lib/ai/router";
-import { MessageNode } from "@/lib/store/chat-store";
 
 // 1. DATA LAYERS
 const SALUTATIONS = ["Hey", "Welcome back", "Look who's here", "Ah, it's you", "Back again?", "Good to see you", "The legend returns", "Welcome to the lab"];
@@ -46,41 +44,7 @@ export async function GET() {
         else if (coin < 0.9) roughGreeting = `${salutation}, ${hook}. ${observation}`;
         else roughGreeting = `${observation} ${trigger}`;
 
-        // C. THE POLISH PASS (LLM)
-        // We prioritize Mistral-Small as it's free/cheap and handles short rewrites well.
-        const modelId = "mistral-small-latest";
-        
-        const polishPrompt = `
-Act as a professional creative writer. 
-Rewrite this rough greeting into a premium, natural, and "alive" chat welcome.
-Rough Greeting: "${roughGreeting}"
-Requirements:
-- Length: 3-5 words maximum.
-- Format: Plain text only, no quotes, no extra symbols.
-- Final output only.
-`;
-
-        const messages: MessageNode[] = [
-            { id: 'sys', role: 'system', content: 'You are a professional writer.', parentId: null, childrenIds: [], activeChildId: null, createdAt: Date.now() },
-            { id: 'usr', role: 'user', content: polishPrompt, parentId: null, childrenIds: [], activeChildId: null, createdAt: Date.now() }
-        ];
-
-        let finalGreeting = "";
-        try {
-            const stream = modelRouter.streamChat(modelId, messages);
-            for await (const chunk of stream) {
-                if (chunk.type === "text") finalGreeting += chunk.content;
-            }
-            finalGreeting = finalGreeting.trim().replace(/^["']|["']$/g, '');
-        } catch (llmError) {
-            console.error("[GreetingAPI] LLM Pass Failed, using rough composition:", llmError);
-            finalGreeting = roughGreeting; // Self-healing fallback
-        }
-
-        // Final sanity check - always use roughGreeting as the "smart" fallback
-        if (!finalGreeting || finalGreeting.length < 3) finalGreeting = roughGreeting;
-
-        return NextResponse.json({ greeting: finalGreeting || "Ready to ship?" });
+        return NextResponse.json({ greeting: roughGreeting || "Ready to ship?" });
     } catch (e: unknown) {
         console.error("[GreetingAPI] Critical Error:", e);
         // Even in a critical error, we try to return something a bit more active

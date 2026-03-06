@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, Search, Globe, HatGlasses, Loader2, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight, Search, Globe, HatGlasses, Loader2, ExternalLink, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ReasoningStep } from "@/lib/store/chat-store";
 import { motion, AnimatePresence } from "framer-motion";
@@ -187,7 +187,7 @@ export const ReasoningDisplay = observer(function ReasoningDisplay({
                                                     <span className="text-xs text-neutral-500">
                                                         {(cite.source || getHostname(cite.url)).replace('www.', '')}
                                                     </span>
-                                                    <ExternalLink className="h-3 w-3 text-neutral-600 opacity-40 group-hover/cite:opacity-100 transition-opacity" />
+                                                    <ArrowUpRight className="h-3 w-3 text-neutral-600 opacity-40 group-hover/cite:opacity-100 transition-opacity" />
                                                 </div>
                                             </a>
                                         ))}

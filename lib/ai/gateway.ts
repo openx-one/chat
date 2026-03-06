@@ -7,6 +7,10 @@ import { ToolExecutor } from "@/lib/tools/executor";
 import { toolRegistry } from "@/lib/tools";
 import { chatStore } from "@/lib/store/chat-store";
 import { canvasStore } from "@/lib/store/canvas-store";
+import { validateWidgetBlocks, buildWidgetCorrectionPrompt } from "@/lib/ai/validators/validate-widget";
+import { logRequest } from "@/lib/ai/telemetry";
+
+const MAX_WIDGET_RETRIES = 1;
 
 /**
  * THE UNIFIED GATEWAY 🧠
@@ -54,6 +58,10 @@ export class Gateway implements ModelAdapter {
   }
 
   async *streamChat(messages: MessageNode[], userId?: string): AsyncGenerator<import("./router").StreamChunk, void, unknown> {
+    const startTime = Date.now();
+    let retryCount = 0;
+    let validationErrors: string[] = [];
+
     try {
       console.log(`[Gateway:${this.id}] Starting request flow...`);
 
@@ -182,6 +190,7 @@ export class Gateway implements ModelAdapter {
       
       let toolCallBuffer: any = null;
       let isToolCall = false;
+      let accumulatedText = "";
 
       for await (const chunk of generator) {
            if (chunk.type === "tool_call_chunk") {
@@ -199,6 +208,7 @@ export class Gateway implements ModelAdapter {
            }
 
            if (chunk.type === "text") {
+              accumulatedText += chunk.content;
               yield { type: "text", content: chunk.content };
            }
       }
@@ -214,9 +224,55 @@ export class Gateway implements ModelAdapter {
            );
       }
 
+      // 6. Post-Stream Widget Validation 🔍
+      if (!isToolCall && accumulatedText.length > 0) {
+          const validation = validateWidgetBlocks(accumulatedText);
+          if (!validation.valid) {
+              validationErrors = validation.errors.flatMap(e => e.issues);
+              console.warn(`[Gateway:${this.id}] Widget validation failed:`, validationErrors);
+
+              // Auto-retry: ask model to fix the widget JSON
+              if (retryCount < MAX_WIDGET_RETRIES) {
+                  retryCount++;
+                  console.log(`[Gateway:${this.id}] Attempting widget correction (retry ${retryCount})...`);
+
+                  const correctionPrompt = buildWidgetCorrectionPrompt(validation.errors);
+                  const retryMessages = [
+                      ...formattedMessages,
+                      { role: "assistant", content: accumulatedText },
+                      { role: "user", content: correctionPrompt }
+                  ];
+
+                  try {
+                      const retryReader = await this.connection.createStream(retryMessages, tools);
+                      const retryGenerator = this.connection.processStream(retryReader);
+
+                      // Stream the corrected response
+                      yield { type: "text", content: "\n\n---\n*Correcting widget data...*\n\n" };
+                      for await (const retryChunk of retryGenerator) {
+                          if (retryChunk.type === "text") {
+                              yield { type: "text", content: retryChunk.content };
+                          }
+                      }
+                  } catch (retryError: any) {
+                      console.error(`[Gateway:${this.id}] Widget correction retry failed:`, retryError.message);
+                      // Graceful degradation: original text was already streamed
+                  }
+              }
+          }
+      }
+
     } catch (error: any) {
       console.error(`Gateway Error (${this.id}):`, error);
       yield { type: "text", content: `\n\n**Gateway Error**: ${error.message || "Unknown error"}` };
+    } finally {
+      // 7. Telemetry 📊
+      logRequest({
+          model: this.id,
+          latencyMs: Date.now() - startTime,
+          retryCount,
+          validationErrors,
+      });
     }
   }
 }

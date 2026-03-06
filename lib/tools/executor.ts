@@ -77,9 +77,16 @@ export class ToolExecutor {
         // Get dynamic friendly label for tool
         let friendlyLabel = "";
         const toolLabelMap: Record<string, (args: any) => string> = {
-            'web_search': () => "Searching Internet...",
+            'web_search': () => "Searching Internet",
             'get_weather': (args) => `Checking weather in ${args.city || "requested city"}...`,
             'get_stock': (args) => `Checking price of ${args.symbol || "requested asset"}...`,
+            'read_url': (args) => {
+                try {
+                    return `Reading webpage ${new URL(args.url).hostname}...`;
+                } catch {
+                    return "Reading webpage...";
+                }
+            },
             'gmail_action': () => "Calling Gmail Agent...",
             'youtube_action': () => "Calling YouTube Agent...",
         };
@@ -222,12 +229,22 @@ export class ToolExecutor {
 
         let result;
         let success = true;
+        const toolStartTime = Date.now();
         try {
             result = await toolRegistry.execute(toolName, args);
         } catch (e) {
             console.error(`[Executor] Tool Execution Failed:`, e);
             result = { content: JSON.stringify({ error: "Tool execution failed internal" }) };
             success = false;
+        } finally {
+            // Telemetry: log tool execution timing
+            const { logToolExecution } = await import("@/lib/ai/telemetry");
+            logToolExecution({
+                toolName,
+                executionMs: Date.now() - toolStartTime,
+                success,
+                error: success ? undefined : "Tool execution failed",
+            });
         }
 
         // Complete tool
@@ -236,46 +253,17 @@ export class ToolExecutor {
             chatStore.updateReasoningStepStatus(chatStore.currentLeafId, activityId, "done");
         }
 
-        // --- CITATION HANDLING ---
-        // If this was a web search, parse results and populate citations for the UI
+        // --- CITATION LOGGING ---
         if (toolName === 'web_search' && success && result && typeof result.content === 'string') {
              try {
                  const searchResults = JSON.parse(result.content);
                  if (Array.isArray(searchResults)) {
-                     const citations = searchResults.map(item => {
-                         let hostname = item.source;
-                         try {
-                             if (item.link) {
-                                 const u = new URL(item.link);
-                                 hostname = hostname || u.hostname;
-                             }
-                         } catch (e) {
-                             // Ignore invalid URL
-                         }
-                         
-                         return {
-                             title: item.title,
-                             url: item.link || '',
-                             icon: hostname ? `https://www.google.com/s2/favicons?domain=${hostname}` : '',
-                             source: hostname || 'Unknown'
-                         };
-                     });
-                     
-                     console.log(`[Executor] Extracted ${citations.length} citations for UI.`);
-
-                     import("@/lib/store/chat-store").then(({ chatStore }) => {
-                         if (chatStore.currentLeafId) {
-                             chatStore.updateMessageCitations(chatStore.currentLeafId, citations);
-                         } else {
-                             console.warn("[Executor] No currentLeafId to update citations");
-                         }
-                     });
+                     console.log(`[Executor] Web search returned ${searchResults.length} results for citation extraction.`);
                  }
              } catch (e) {
                  console.error("[Executor] Failed to parse search results for citations", e);
              }
         }
-        // --- END CITATION HANDLING ---
 
         let systemGuidance: string | undefined;
         let chainExecuted = false; // Track if chaining happened (skip normal result push)
@@ -356,27 +344,12 @@ export class ToolExecutor {
             }
         });
 
-        let resultContentStr = typeof result === 'string' ? result : (result.content || JSON.stringify(result));
+        // Keep tool result content CLEAN (no guidance mixed in)
+        const resultContentStr = typeof result === 'string' ? result : (result.content || JSON.stringify(result));
 
-        if (systemGuidance) {
-            try {
-                // Try to parse, inject, and re-stringify to keep valid JSON
-                let jsonObj = JSON.parse(resultContentStr);
-                if (typeof jsonObj === 'object' && jsonObj !== null) {
-                    jsonObj.system_guidance = systemGuidance;
-                    resultContentStr = JSON.stringify(jsonObj);
-                } else {
-                    // Fallback if not an object
-                    resultContentStr += `\n\nSYSTEM: ${systemGuidance}`;
-                }
-            } catch (e) {
-                // If it wasn't JSON, just append
-                resultContentStr += `\n\nSYSTEM: ${systemGuidance}`;
-            }
-        }
-
-        // 3. Yield Result to Client
+        // 3. Yield CLEAN Result to Client (for citation extraction via JSON.parse)
         yield { type: "tool_result", content: resultContentStr, name: toolName, tool_call_id: callId };
+
 
         // 4. Update History with Result (Only if chaining didn't already do this)
         if (!chainExecuted) {
@@ -389,6 +362,15 @@ export class ToolExecutor {
             formattedMessages.push(toolMsg);
             if (sanitizedMessages !== formattedMessages) {
                 sanitizedMessages.push(toolMsg);
+            }
+
+            // 4b. Add citation guidance as SEPARATE system message (not mixed into tool result)
+            if (systemGuidance) {
+                const guidanceMsg = { role: "user", content: `[System Instruction] ${systemGuidance}` };
+                formattedMessages.push(guidanceMsg);
+                if (sanitizedMessages !== formattedMessages) {
+                    sanitizedMessages.push(guidanceMsg);
+                }
             }
         }
 

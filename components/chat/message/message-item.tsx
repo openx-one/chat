@@ -12,6 +12,7 @@ import { MessageContent } from "./message-content";
 import { FileText, Globe } from "lucide-react";
 import { SearchResult } from "@/lib/tools/web-search";
 import { ReasoningDisplay } from "@/components/chat/reasoning-display";
+import { TokenStats } from "./token-stats";
 // import FramerLoading from "@/components/chat/framer-loading";
 // import { toolActivityStore } from "@/lib/store/tool-activity-store"; // Removed
 
@@ -143,10 +144,10 @@ export const MessageItem = observer(({
                         isAnalyzing={isAnalyzing}
                         isSearching={isSearching}
                         hasReasoning={message.reasoningSteps && message.reasoningSteps.length > 0}
-                        // Attachments handled in parent now
+                        citations={citations}
                     />
                 </div>
-                {/* <TokenStats stats={message.stats} /> */}
+                <TokenStats stats={message.stats} />
             </div>
         )}
 

@@ -21,7 +21,7 @@ async function searchSerpApi(query: string): Promise<SearchResult[]> {
         const data = await fetchSerpApi({
             q: query,
             engine: "google",
-            num: "10"
+            num: "5"
         });
 
         return data.organic_results?.map((item: any) => ({
@@ -154,7 +154,7 @@ export async function searchWeb(query: string): Promise<SearchResult[]> {
   console.log(`Merged Total: ${finalResults.length} results`);
 
   // Universal Proxy: Ensure ALL images bypass hotlink protection
-  return finalResults.slice(0, 20).map(item => {
+  return finalResults.slice(0, 5).map(item => {
       if (item.imageUrl && !item.imageUrl.startsWith('/api/proxy')) {
            // Skip proxying if it's already a safe data/blob or reliable CDN (e.g. SerpApi thumbnails)
            // But for consistency and "Manual View" simulation, we proxy everything except already proxied.

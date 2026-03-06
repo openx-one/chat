@@ -30,10 +30,6 @@ export function CitationSheet({ citations, children }: CitationSheetProps) {
             <Newspaper className="w-5 h-5" />
             <span className="text-sm font-medium uppercase tracking-wider">Citations</span>
           </div>
-          <SheetTitle className="text-2xl font-semibold tracking-tight">Sources</SheetTitle>
-          <SheetDescription className="text-neutral-500">
-            References used to generate the response.
-          </SheetDescription>
         </SheetHeader>
         
         <div className="flex-1 overflow-y-auto px-6 py-6">

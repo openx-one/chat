@@ -3,6 +3,7 @@ import TextareaAutosize from "react-textarea-autosize";
 import { MarkdownRenderer } from "./markdown-renderer";
 import { ThinkingAnimation } from "@/components/chat/thinking-animation";
 import { observer } from "mobx-react-lite";
+import { SearchResult } from "@/lib/tools/web-search";
 // fileText removed
 
 interface MessageContentProps {
@@ -18,6 +19,7 @@ interface MessageContentProps {
   isAnalyzing?: boolean;
   isSearching?: boolean;
   hasReasoning?: boolean;
+  citations?: SearchResult[];
 }
 
 export const MessageContent = observer(function MessageContent({ 
@@ -30,7 +32,8 @@ export const MessageContent = observer(function MessageContent({
     isStreaming,
     isAnalyzing,
     isSearching,
-    hasReasoning
+    hasReasoning,
+    citations
 }: MessageContentProps) {
     if (isEditing) {
         return (
@@ -58,7 +61,7 @@ export const MessageContent = observer(function MessageContent({
             
             {/* Content */}
             {(content.length > 0) && (
-                <MarkdownRenderer content={content} />
+                <MarkdownRenderer content={content} citations={citations} />
             )}
             
             {/* Streaming / Loading Indicator - Only if NOT reasoning */}

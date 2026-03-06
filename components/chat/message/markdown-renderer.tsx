@@ -14,12 +14,17 @@ import { ImageCarousel, GallerySkeleton } from '@/components/chat/Widgets/image-
 import { WeatherCard, WeatherSkeleton } from '@/components/chat/Widgets/weather-card';
 import { canvasStore } from "@/lib/store/canvas-store";
 import { Copy, FileCode, Play } from "lucide-react";
+import { CitationBadge } from "./citation-badge";
+import { SearchResult } from "@/lib/tools/web-search";
 
 interface MarkdownRendererProps {
   content: string;
+  citations?: SearchResult[];
 }
 
-export const MarkdownRenderer = React.memo(({ content }: MarkdownRendererProps) => {
+export const MarkdownRenderer = React.memo(({ content, citations = [] }: MarkdownRendererProps) => {
+  // Counter to distribute citations across paragraphs/list items
+  let citationCounter = 0;
   // Fix LaTeX incompatible characters (e.g. en-dash to hyphen)
   // Fix LaTeX incompatible characters (e.g. en-dash to hyphen)
   // Also escape dollar signs that are likely currency ($ followed by digit) to prevent accidental math mode
@@ -162,17 +167,37 @@ export const MarkdownRenderer = React.memo(({ content }: MarkdownRendererProps) 
             return <td className="px-4 py-3 border-b border-white/5 text-neutral-300 first:font-medium first:text-neutral-200">{children}</td>;
         },
         a({ href, children }) {
+            // Render all links as plain clickable text — no badge conversion
             return (
                 <a 
                     href={href} 
                     target="_blank" 
                     rel="noopener noreferrer" 
-                    className="text-white/80 hover:text-white underline decoration-white/20 hover:decoration-white/50 transition-colors font-medium break-all"
+                    className="text-blue-400/80 hover:text-blue-300 underline decoration-blue-400/20 hover:decoration-blue-400/50 transition-colors font-medium"
                 >
                     {children}
                 </a>
-            )
+            );
         },
+        p({ children }) {
+            // Auto-inject a citation badge at the end of each paragraph
+            if (!citations || citations.length === 0) {
+                return <p className="mb-4 leading-relaxed">{children}</p>;
+            }
+
+            const idx = citationCounter++ % citations.length;
+            return (
+                <p className="mb-4 leading-relaxed">
+                    {children}
+                    <CitationBadge 
+                        citations={[citations[idx]]} 
+                        allCitations={citations} 
+                    />
+                </p>
+            );
+        },
+
+
         img({ src, alt }) {
             return (
                 <span className="block my-8 group">
@@ -183,7 +208,7 @@ export const MarkdownRenderer = React.memo(({ content }: MarkdownRendererProps) 
                             className="w-full h-auto object-cover max-h-[400px] opacity-90 group-hover:opacity-100 transition-opacity"
                             loading="lazy"
                         />
-                    </span>s
+                    </span>
                     {alt && <span className="block text-xs text-neutral-500 mt-2 italic">{alt}</span>}
                 </span>
             );
@@ -195,15 +220,25 @@ export const MarkdownRenderer = React.memo(({ content }: MarkdownRendererProps) 
             return <ol className="list-decimal ml-5 space-y-1.5 my-3 marker:opacity-70">{children}</ol>;
         },
         li({ children }) {
-            return <li className="pl-1">{children}</li>;
+            if (!citations || citations.length === 0) {
+                return <li className="pl-1">{children}</li>;
+            }
+            const idx = citationCounter++ % citations.length;
+            return (
+                <li className="pl-1">
+                    {children}
+                    <CitationBadge 
+                        citations={[citations[idx]]} 
+                        allCitations={citations} 
+                    />
+                </li>
+            );
         },
         hr({ children }) {
             // Opinionated: Replace visible HR with whitespace for a cleaner "editorial" look
             return <div className="my-8" />;
         },
-        p({ children }) {
-            return <p className="leading-relaxed [&:not(:first-child)]:mt-4">{children}</p>;
-        },
+
         pre({ children   }) {
             return <div className="not-prose my-1">{children}</div>;
         },

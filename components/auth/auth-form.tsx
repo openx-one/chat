@@ -98,16 +98,9 @@ export function UserAuthForm({ className, view, ...props }: UserAuthFormProps) {
   const handleGoogleLogin = async () => {
       setIsLoading(true);
       
-      // We restore redirectTo because the CF worker now rigidly enforces the
-      // Proxy domain as the OAuth redirect_uri via X-Forwarded-Host.
-      // Supabase uses this `redirectTo` attribute cleanly as the FINAL destination
-      // AFTER the proxy successfully completes the Google handshake.
-      await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-              redirectTo: `${window.location.origin}/auth/callback`,
-          }
-      });
+      // Bypassing Supabase GoTrue proxy entirely. We initiate the
+      // Google OAuth handshake natively via our own Next.js API route.
+      window.location.href = '/api/auth/google';
   }
 
   return (

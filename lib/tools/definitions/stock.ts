@@ -15,8 +15,14 @@ export const stockTool: Tool = {
     },
     execute: async (args) => {
         const data = await getStockData(args.query);
+        
+        // CRITICAL: Strip the heavy chart array before sending to the LLM.
+        // The LLM only needs the fundamentals (price, PE, description) to answer questions.
+        // Sending the enormous chart array will blow up the context window.
+        const { chart, ...llmData } = data;
+
         return {
-            content: JSON.stringify(data)
+            content: JSON.stringify(llmData)
         };
     }
 };
